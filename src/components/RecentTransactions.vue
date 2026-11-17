@@ -1,24 +1,20 @@
 <script setup lang="ts">
 import demo from '@/data/demo.json'
-import BaseButton from '@/components/BaseButton.vue'
+import { RouterLink } from 'vue-router'
+import caretRight from '@/assets/icons/caret-right.svg'
 import { formatCurrency } from '@/utils/currency'
+import { formatCalendarDate } from '@/utils/formatting'
 
 const avatarAssets = import.meta.glob<string>(
   '@/assets/images/avatars/{emma-richardson,savory-bites-bistro,daniel-carter,sun-park,urban-services-hub,liam-hughes,lily-ramirez,ethan-clark,james-thompson,pixel-playground}.jpg',
   { eager: true, query: '?url', import: 'default' },
 )
-const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-  timeZone: 'UTC',
-})
 
 const transactions = demo.transactions.slice(0, 10).map((transaction) => ({
   ...transaction,
   avatar: avatarAssets[transaction.avatar],
   calendarDate: transaction.date.slice(0, 10),
-  displayDate: dateFormatter.format(new Date(transaction.date)),
+  displayDate: formatCalendarDate(transaction.date),
   displayAmount: `${transaction.amount > 0 ? '+' : ''}${formatCurrency(transaction.amount)}`,
 }))
 </script>
@@ -30,18 +26,13 @@ const transactions = demo.transactions.slice(0, 10).map((transaction) => ({
   >
     <header class="mb-8 flex items-center justify-between gap-4">
       <h2 id="transactions-heading" class="text-preset-2">Transactions</h2>
-      <BaseButton
-        variant="tertiary"
-        trailing-caret
-        disabled
-        aria-describedby="transactions-unavailable"
-        class="shrink-0"
+      <RouterLink
+        to="/transactions"
+        class="inline-flex shrink-0 items-center gap-3 rounded-lg text-preset-4 text-gray-500 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900"
       >
         View All
-      </BaseButton>
-      <p id="transactions-unavailable" class="sr-only">
-        The Transactions page is not available yet.
-      </p>
+        <img :src="caretRight" alt="" />
+      </RouterLink>
     </header>
     <div
       role="region"

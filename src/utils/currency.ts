@@ -1,11 +1,13 @@
+import { locale } from '@/utils/formatting'
+
 const formatters = {
-  0: new Intl.NumberFormat('en-US', {
+  0: new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }),
-  2: new Intl.NumberFormat('en-US', {
+  2: new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,

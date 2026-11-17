@@ -21,10 +21,11 @@ for (const { width, height, mode } of layouts) {
       'aria-current',
       'page',
     )
-    await expect(navigation.getByRole('button', { name: 'Transactions' })).toBeDisabled()
-    await expect(
-      navigation.getByRole('button', { name: 'Transactions' }),
-    ).toHaveAccessibleDescription('This section is not available yet.')
+    await expect(navigation.getByRole('link', { name: 'Transactions' })).toHaveAttribute(
+      'href',
+      '/transactions',
+    )
+    await expect(navigation.getByRole('button', { name: 'Budgets' })).toBeDisabled()
     await expect(page.getByRole('button', { name: 'Minimize menu' })).toBeVisible({
       visible: mode === 'desktop',
     })

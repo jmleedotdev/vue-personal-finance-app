@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import BaseButton from '@/components/BaseButton.vue'
 import IconMinimizeMenu from '@/components/icons/IconMinimizeMenu.vue'
 import smallLogo from '@/assets/images/logo-small.svg'
@@ -13,13 +13,14 @@ import IconRecurringBills from '@/components/icons/IconRecurringBills.vue'
 import logo from '@/assets/images/logo-large.svg'
 
 const minimized = ref(false)
+const route = useRoute()
 
 const views = [
-  { label: 'Overview', icon: IconOverview, active: true },
-  { label: 'Transactions', icon: IconTransactions, active: false },
-  { label: 'Budgets', icon: IconBudgets, active: false },
-  { label: 'Pots', icon: IconPots, active: false },
-  { label: 'Recurring Bills', icon: IconRecurringBills, active: false },
+  { label: 'Overview', icon: IconOverview, to: '/', routeName: 'overview' },
+  { label: 'Transactions', icon: IconTransactions, to: '/transactions', routeName: 'transactions' },
+  { label: 'Budgets', icon: IconBudgets, to: undefined },
+  { label: 'Pots', icon: IconPots, to: undefined },
+  { label: 'Recurring Bills', icon: IconRecurringBills, to: undefined },
 ]
 </script>
 
@@ -44,21 +45,26 @@ const views = [
           class="min-w-0 flex-1 md:max-w-[104px] xl:max-w-none"
         >
           <component
-            :is="view.active ? RouterLink : 'button'"
-            :to="view.active ? '/' : undefined"
-            :type="view.active ? undefined : 'button'"
-            :disabled="!view.active || undefined"
+            :is="view.to ? RouterLink : 'button'"
+            :to="view.to"
+            :type="view.to ? undefined : 'button'"
+            :disabled="!view.to || undefined"
             :aria-label="view.label"
-            :aria-describedby="view.active ? undefined : 'navigation-unavailable'"
-            class="flex w-full flex-col items-center gap-1 rounded-t-lg border-b-4 pt-2 pb-3 font-bold focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-green disabled:cursor-not-allowed md:text-preset-5 md:font-bold xl:h-14 xl:flex-row xl:gap-4 xl:rounded-tl-none xl:rounded-r-xl xl:border-b-0 xl:border-l-4 xl:px-7 xl:py-4 xl:text-preset-3"
+            :aria-describedby="view.to ? undefined : 'navigation-unavailable'"
+            class="flex w-full flex-col items-center gap-1 rounded-t-lg border-b-4 pt-2 pb-3 font-bold transition-colors duration-150 ease-in-out focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-green disabled:cursor-not-allowed motion-reduce:transition-none md:text-preset-5 md:font-bold xl:h-14 xl:flex-row xl:gap-4 xl:rounded-tl-none xl:rounded-r-xl xl:border-b-0 xl:border-l-4 xl:px-7 xl:py-4 xl:text-preset-3"
             :class="
-              view.active
+              view.routeName === route.name
                 ? 'border-green bg-beige-100 text-gray-900'
-                : 'border-transparent text-gray-300'
+                : view.to
+                  ? 'border-transparent text-gray-300 hover:text-white'
+                  : 'border-transparent text-gray-300'
             "
           >
             <span class="flex size-6 shrink-0 items-center justify-center">
-              <component :is="view.icon" :class="view.active ? 'text-green' : 'text-gray-300'" />
+              <component
+                :is="view.icon"
+                :class="view.routeName === route.name ? 'text-green' : undefined"
+              />
             </span>
             <span class="sr-only md:not-sr-only" :class="{ 'xl:sr-only': minimized }">{{
               view.label

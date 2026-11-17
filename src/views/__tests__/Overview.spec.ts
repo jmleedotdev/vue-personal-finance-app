@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '@/App.vue'
-import HomeView from '@/views/HomeView.vue'
+import { routes } from '@/router'
 import demo from '@/data/demo.json'
 
 const originalTransactions = [...demo.transactions]
@@ -18,7 +18,7 @@ afterEach(() => {
 async function renderOverview() {
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/', component: HomeView }],
+    routes,
   })
   await router.push('/')
   const screen = mount(App, { global: { plugins: [router] } })
@@ -252,12 +252,15 @@ describe('Overview', () => {
     )
   })
 
-  it('marks Overview active and explains why other destinations are unavailable', async () => {
+  it('marks Overview active and explains why unfinished destinations are unavailable', async () => {
     const screen = await renderOverview()
     const navigation = screen.get('nav[aria-label="Main navigation"]')
     expect(navigation.get('a[aria-current="page"]').text()).toBe('Overview')
-    expect(navigation.findAll('a').map((link) => link.attributes('href'))).toEqual(['/'])
-    for (const label of ['Transactions', 'Budgets', 'Pots', 'Recurring Bills']) {
+    expect(navigation.findAll('a').map((link) => link.attributes('href'))).toEqual([
+      '/',
+      '/transactions',
+    ])
+    for (const label of ['Budgets', 'Pots', 'Recurring Bills']) {
       const destination = navigation
         .findAll('button')
         .find((button) => button.attributes('aria-label') === label)!
@@ -343,16 +346,12 @@ describe('Overview', () => {
     ])
   })
 
-  it('explains that the full Transactions page is unavailable without offering an enabled link', async () => {
+  it('links to the full Transactions page and resolves all preview avatars', async () => {
     const screen = await renderOverview()
     const transactions = screen.get('section[aria-labelledby="transactions-heading"]')
-    const viewAll = transactions.get('button')
+    const viewAll = transactions.get('a')
     expect(viewAll.text()).toBe('View All')
-    expect(viewAll.attributes('disabled')).toBeDefined()
-    expect(screen.get(`#${viewAll.attributes('aria-describedby')}`).text()).toBe(
-      'The Transactions page is not available yet.',
-    )
-    expect(transactions.find('a').exists()).toBe(false)
+    expect(viewAll.attributes('href')).toBe('/transactions')
     expect(transactions.findAll('li img').map((avatar) => avatar.attributes('src'))).toEqual([
       expect.stringContaining('emma-richardson'),
       expect.stringContaining('savory-bites-bistro'),

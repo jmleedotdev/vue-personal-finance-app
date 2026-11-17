@@ -13,9 +13,9 @@ for (const width of [1440, 768, 375, 320, 600, 900, 1280]) {
     const card = page.getByRole('region', { name: 'Transactions', exact: true })
     const rows = card.getByRole('listitem')
     await expect(rows).toHaveCount(10)
-    await expect(card.getByRole('button', { name: 'View All' })).toBeDisabled()
-    await expect(card.getByRole('button', { name: 'View All' })).toHaveAccessibleDescription(
-      'The Transactions page is not available yet.',
+    await expect(card.getByRole('link', { name: 'View All' })).toHaveAttribute(
+      'href',
+      '/transactions',
     )
     await expect(rows.first().locator('time')).toHaveText('19 Aug 2024')
     await expect
