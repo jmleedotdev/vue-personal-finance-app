@@ -1,11 +1,19 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import App from '@/App.vue'
 import HomeView from '@/views/HomeView.vue'
+import demo from '@/data/demo.json'
 
+const originalTransactions = [...demo.transactions]
+const originalBudgets = demo.budgets.map((budget) => ({ ...budget }))
 const screens: ReturnType<typeof mount>[] = []
-afterEach(() => screens.splice(0).forEach((screen) => screen.unmount()))
+afterEach(() => {
+  screens.splice(0).forEach((screen) => screen.unmount())
+  demo.transactions.splice(0, demo.transactions.length, ...originalTransactions)
+  demo.budgets.splice(0, demo.budgets.length, ...originalBudgets.map((budget) => ({ ...budget })))
+  vi.useRealTimers()
+})
 
 async function renderOverview() {
   const router = createRouter({
@@ -20,6 +28,94 @@ async function renderOverview() {
 }
 
 describe('Overview', () => {
+  it('shows August 2024 budget spending, category limits, and an unavailable detail action', async () => {
+    const screen = await renderOverview()
+    const budgets = screen.get('section[aria-labelledby="budgets-heading"]')
+    expect(budgets.get('h2').text()).toBe('Budgets')
+    expect(budgets.get('[role="img"]').attributes('aria-label')).toBe(
+      'August 2024 budget spending: $338 spent of $975 limit.',
+    )
+    expect(budgets.findAll('li').map((row) => row.findAll('p').map((text) => text.text()))).toEqual(
+      [
+        ['Entertainment', '$50.00', 'Spent $15.00 of $50.00 limit.'],
+        ['Bills', '$750.00', 'Spent $150.00 of $750.00 limit.'],
+        ['Dining Out', '$75.00', 'Spent $133.00 of $75.00 limit.'],
+        ['Personal Care', '$100.00', 'Spent $40.00 of $100.00 limit.'],
+      ],
+    )
+    expect(budgets.get('ul[aria-label="Budget categories"]').attributes('tabindex')).toBeUndefined()
+    const details = budgets.get('button')
+    expect(details.text()).toBe('See Details')
+    expect(details.attributes('disabled')).toBeDefined()
+    expect(screen.get(`#${details.attributes('aria-describedby')}`).text()).toBe(
+      'The Budgets page is not available yet.',
+    )
+    expect(budgets.find('a').exists()).toBe(false)
+  })
+
+  it('keeps extra budget categories reachable in a named keyboard-accessible legend', async () => {
+    demo.budgets.push(
+      { category: 'Travel', maximum: 50, theme: '#277C78' },
+      { category: 'Fitness', maximum: 60, theme: '#82C9D7' },
+    )
+    const screen = await renderOverview()
+    const budgets = screen.get('section[aria-labelledby="budgets-heading"]')
+    const legend = budgets.get('ul[aria-label="Budget categories"]')
+    expect(legend.findAll('li')).toHaveLength(6)
+    expect(
+      legend
+        .findAll('li')
+        .slice(4)
+        .map((row) => row.get('p').text()),
+    ).toEqual(['Travel', 'Fitness'])
+    expect(legend.attributes('tabindex')).toBe('0')
+    expect(screen.get(`#${legend.attributes('aria-describedby')}`).text()).toBe(
+      'Use arrow keys when focused, swipe, or scroll to reach all budget categories.',
+    )
+    expect(budgets.get('[role="img"]').attributes('aria-label')).toBe(
+      'August 2024 budget spending: $338 spent of $1,085 limit.',
+    )
+  })
+
+  it.each(['2024-07-15T12:00:00Z', '2030-02-01T12:00:00Z'])(
+    'derives only outgoing configured-category August 2024 spending when today is %s',
+    async (today) => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(today))
+      // Replace the source fixture before rendering, rather than mocking chart internals.
+      const transaction = originalTransactions[0]!
+      demo.transactions.splice(
+        0,
+        demo.transactions.length,
+        ...[
+          { category: 'Entertainment', amount: -12.5, date: '2024-08-01T00:00:00Z' },
+          { category: 'Bills', amount: -20.5, date: '2024-08-31T23:59:59Z' },
+          { category: 'Dining Out', amount: -3, date: '2024-08-15T12:00:00Z' },
+          { category: 'Personal Care', amount: -4, date: '2024-08-15T12:00:00Z' },
+          { category: 'Entertainment', amount: 500, date: '2024-08-15T12:00:00Z' },
+          { category: 'Bills', amount: -600, date: '2024-07-31T23:59:59Z' },
+          { category: 'Bills', amount: -700, date: '2024-09-01T00:00:00Z' },
+          { category: 'Bills', amount: -800, date: '2025-08-15T12:00:00Z' },
+          { category: 'General', amount: -900, date: '2024-08-15T12:00:00Z' },
+        ].map((entry) => ({ ...transaction, ...entry })),
+      )
+      demo.budgets[0]!.maximum = 80
+      const screen = await renderOverview()
+      const budgets = screen.get('section[aria-labelledby="budgets-heading"]')
+      expect(budgets.get('[role="img"]').attributes('aria-label')).toBe(
+        'August 2024 budget spending: $40 spent of $1,005 limit.',
+      )
+      expect(
+        budgets.findAll('li').map((row) => row.findAll('p').map((text) => text.text())),
+      ).toEqual([
+        ['Entertainment', '$80.00', 'Spent $12.50 of $80.00 limit.'],
+        ['Bills', '$750.00', 'Spent $20.50 of $750.00 limit.'],
+        ['Dining Out', '$75.00', 'Spent $3.00 of $75.00 limit.'],
+        ['Personal Care', '$100.00', 'Spent $4.00 of $100.00 limit.'],
+      ])
+    },
+  )
+
   it('minimizes and restores the menu while retaining named navigation and balances', async () => {
     const screen = await renderOverview()
     const minimize = screen.get('button[aria-label="Minimize menu"]')

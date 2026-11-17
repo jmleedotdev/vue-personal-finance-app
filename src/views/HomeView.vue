@@ -2,6 +2,7 @@
 import BalanceSummary from '@/components/BalanceSummary.vue'
 import PotsSummary from '@/components/PotsSummary.vue'
 import RecentTransactions from '@/components/RecentTransactions.vue'
+import BudgetSummary from '@/components/BudgetSummary.vue'
 </script>
 
 <template>
@@ -16,6 +17,9 @@ import RecentTransactions from '@/components/RecentTransactions.vue'
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
         <PotsSummary />
         <RecentTransactions />
+      </div>
+      <div class="flex min-w-0 flex-col gap-4 md:gap-6">
+        <BudgetSummary />
       </div>
     </div>
   </main>
