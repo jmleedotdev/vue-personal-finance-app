@@ -32,15 +32,18 @@ for (const { width, height, mode } of layouts) {
       .getByRole('link', { name: 'Overview' })
       .evaluate((link) => link.lastElementChild!.getBoundingClientRect().width > 1)
     expect(labelVisible).toBe(mode !== 'mobile')
-    const summaries = await page.locator('dd').evaluateAll((values) =>
-      values.map((value) => {
-        const range = document.createRange()
-        range.selectNodeContents(value)
-        const text = range.getBoundingClientRect()
-        const card = value.parentElement!.getBoundingClientRect()
-        return { y: text.y, fits: text.left >= card.left && text.right <= card.right }
-      }),
-    )
+    const summaries = await page
+      .getByLabel('Balance summaries')
+      .locator('dd')
+      .evaluateAll((values) =>
+        values.map((value) => {
+          const range = document.createRange()
+          range.selectNodeContents(value)
+          const text = range.getBoundingClientRect()
+          const card = value.parentElement!.getBoundingClientRect()
+          return { y: text.y, fits: text.left >= card.left && text.right <= card.right }
+        }),
+      )
     expect(summaries).toHaveLength(3)
     expect(summaries.every((summary) => summary.fits)).toBe(true)
     expect(summaries[0]!.y < summaries[1]!.y && summaries[1]!.y < summaries[2]!.y).toBe(

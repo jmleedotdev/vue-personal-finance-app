@@ -10,7 +10,7 @@ const summaries = [
 </script>
 
 <template>
-  <dl class="grid gap-3 md:grid-cols-3 md:gap-6">
+  <dl aria-label="Balance summaries" class="grid gap-3 md:grid-cols-3 md:gap-6">
     <div
       v-for="summary in summaries"
       :key="summary.label"

@@ -2,7 +2,7 @@
 
 A client-rendered Vue 3 / TypeScript demo with a responsive Overview, local Public Sans typography, Tailwind theme tokens, and accessible shared controls.
 
-The Overview currently shows the supplied balance summaries with desktop sidebar navigation (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. Transactions, Budgets, Pots, and Recurring Bills destinations are unavailable for now. The remaining Overview cards are separate follow-up tickets; there is no backend, authentication, or persistence.
+The Overview shows balance summaries, scrollable pots and recent transactions, an interactive budget chart, and calculated recurring-bill summaries. Navigation uses a desktop sidebar (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. The separate Transactions, Budgets, Pots, and Recurring Bills destination pages remain unavailable; there is no backend, authentication, or persistence.
 
 ## Development
 
@@ -45,7 +45,7 @@ Playwright checks reference, intermediate, and narrow widths for responsive navi
 
 - `src/App.vue`: shared responsive shell and routed content.
 - `src/components/AppNavigation.vue`: navigation modes and menu state.
-- `src/views/HomeView.vue`: Overview entry and responsive content flow for subsequent cards.
+- `src/views/HomeView.vue`: Overview entry and responsive layout for balances, pots, recent transactions, budgets, and recurring bills.
 - `src/components/BalanceSummary.vue`: independent supplied balance summaries from `src/data/demo.json`, not transaction-derived totals.
 - `src/components/Base*.vue`: shared accessible controls.
 - `src/assets/main.css`: theme tokens, typography, and local font setup.

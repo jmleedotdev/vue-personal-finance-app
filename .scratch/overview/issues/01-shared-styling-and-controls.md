@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Consult the parent spec and its Git-ignored private design references. Inspect the supplied design's shared button/input definitions before choosing variants; do not invent a comprehensive UI library.
 - [x] Define reusable Tailwind theme colors for the evidenced surfaces, neutrals, and accent palette, rather than repeating equivalent literals throughout templates.
@@ -50,3 +50,10 @@
 - Applied requested dropdown list top/bottom padding (12px), beige option hover backgrounds, and 150ms button color transitions with reduced-motion support.
 - Owner reviewed and authorized committing the completed work.
 - Final checks: all 18 unit tests, type-check, focused ESLint, production build, and diff whitespace validation pass. Known starter E2E limitations remain as documented above.
+
+### Final completion review
+
+- Shared styling, local typography, buttons, inputs, and the owner-approved custom dropdown are complete.
+- Reviewed against the parent spec and all ticket comments, including owner-approved scope revisions. The owner confirmed the implementations are good and approved completion during this session.
+- Final integration validation: all 39 unit tests and all 42 Chromium browser tests pass; production build and type-check pass. Both whole-feature review findings (responsive-test selector and stale README descriptions) are fixed and validated.
+- Status changed to `resolved`.

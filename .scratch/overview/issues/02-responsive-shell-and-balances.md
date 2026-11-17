@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Establish shared styling and accessible controls.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Consult the parent spec and its private design references; use the established theme, local typography, and shared controls.
 - [x] Render a desktop sidebar, tablet bottom navigation with labels, and mobile icon navigation with accessible names, matching the supplied layouts.
@@ -43,3 +43,10 @@
 - Converted the five view icons and minimize/restore icon to `Icon*.vue` components with `currentColor`, preserving supplied path geometry and intrinsic dimensions. No dependency, CSS mask, or `v-html` is needed; original source assets remain available.
 - Added the shared buttons' 150ms ease-in-out color transition to the minimize/restore label and icon, with reduced-motion support.
 - Owner reviewed these follow-ups and authorized the commit.
+
+### Final completion review
+
+- Responsive navigation, menu collapse/restore, balance summaries, and starter cleanup are complete. Final review follow-ups corrected the README's obsolete milestone descriptions and scoped the responsive balance checks to the named Balance summaries group, avoiding recurring-bill amounts.
+- Reviewed against the parent spec and all ticket comments, including owner-approved scope revisions. The owner confirmed the implementations are good and approved completion during this session.
+- Final integration validation: all 39 unit tests and all 42 Chromium browser tests pass; production build and type-check pass. Both whole-feature review findings (responsive-test selector and stale README descriptions) are fixed and validated.
+- Status changed to `resolved`.

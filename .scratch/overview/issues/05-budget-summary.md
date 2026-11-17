@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Build the responsive app shell and balance summaries.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Integrate the card into the responsive Overview using established styling and shared controls; consult the parent spec and private visual references.
 - [x] Calculate spending from outgoing August 2024 transactions belonging to the configured budget categories. Exclude income, July expenses, and categories without a configured budget.
@@ -33,3 +33,10 @@
 - Implementation complete and owner-reviewed. Validated after the scrollable-legend follow-up: 30 unit tests, 38 Chromium checks, type-check, production build, focused ESLint/Oxlint, and `git diff --check`. Hover tests cover all four categories at 1440, 1280, and 375px, both ring bands, and restoration over the hole and outside the chart. Browser chart/legend checks cover 1440, 768, 375, 320, 600, 900, and 1280px; desktop/tablet/mobile card screenshots were visually compared with the supplied references. Segment sizes reflect configured budget limits, as confirmed by the owner. Hover tests use limit-based mid-segment angles and expect Bills at the bottom of the ring.
 - Production JavaScript grows from 125.22 kB / 47.07 kB gzip to 239.38 kB / 86.78 kB gzip after chart extraction and scrollable legend, including the decorative overlay and center-value hover, without tooltips (whole implementation delta, about 39.71 kB additional gzip).
 - Two-axis review: Standards identified one implementation-coupled SVG-path-count assertion, which was removed; Spec found no issues. Final validation passed after the correction. The subsequent hover addition also passed both Standards and Spec reviews with no findings. The chart extraction and scrollable legend also passed both review axes without findings. Owner approved the final changes for commit.
+
+### Final completion review
+
+- Fixed-August budget calculations, limit-based chart segments, category spending/limit hover behavior, and the responsive scrollable legend are complete, including the documented owner-approved extensions.
+- Reviewed against the parent spec and all ticket comments, including owner-approved scope revisions. The owner confirmed the implementations are good and approved completion during this session.
+- Final integration validation: all 39 unit tests and all 42 Chromium browser tests pass; production build and type-check pass. Both whole-feature review findings (responsive-test selector and stale README descriptions) are fixed and validated.
+- Status changed to `resolved`.
