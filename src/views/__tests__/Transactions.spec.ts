@@ -22,7 +22,194 @@ async function renderApp(path = '/') {
   return { screen, router }
 }
 
+async function choose(screen: ReturnType<typeof mount>, label: string, value: string) {
+  const control = screen
+    .findAll('[role="combobox"]')
+    .find((item) => item.attributes('aria-label') === label)!
+  await control.trigger('click')
+  await screen
+    .findAll('[role="option"]')
+    .find((item) => item.text() === value)!
+    .trigger('click')
+  await flushPromises()
+}
+
 describe('Transactions', () => {
+  it('combines applied search, category, sorting and pagination while ignoring drafts and restoring history', async () => {
+    const { screen, router } = await renderApp('/transactions?search=a&page=2')
+    const input = screen.get('input')
+    await input.setValue('unsubmitted')
+    await choose(screen, 'Filter by category', 'General')
+    expect(router.currentRoute.value.query).toEqual({ search: 'a', category: 'General' })
+    expect(screen.findAll('tbody tr')).toHaveLength(10)
+    await screen.get('button[aria-label="Next page"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ search: 'a', category: 'General', page: '2' })
+    await input.setValue('another draft')
+    await choose(screen, 'Sort transactions', 'Lowest')
+    expect(router.currentRoute.value.query).toEqual({
+      search: 'a',
+      category: 'General',
+      sort: 'Lowest',
+    })
+    expect(screen.get('tbody th').text()).toBe('Urban Services Hub')
+    await input.setValue('Emma')
+    await screen.get('form').trigger('submit')
+    await flushPromises()
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Emma Richardson',
+      'Emma Richardson',
+    ])
+    await choose(screen, 'Filter by category', 'Bills')
+    expect(screen.text()).toContain('No transactions found')
+    expect(screen.find('nav[aria-label="Transaction pages"]').exists()).toBe(false)
+    expect(screen.findAll('[role="combobox"]')).toHaveLength(2)
+    expect(screen.text()).not.toContain('Clear filters')
+    await input.setValue(' ')
+    await screen.get('form').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ category: 'Bills', sort: 'Lowest' })
+    expect(screen.findAll('tbody tr')).toHaveLength(7)
+    await input.setValue('discard me')
+    router.back()
+    await flushPromises()
+    expect((input.element as HTMLInputElement).value).toBe('Emma')
+    expect(screen.text()).toContain('No transactions found')
+    router.back()
+    await flushPromises()
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Emma Richardson',
+      'Emma Richardson',
+    ])
+    expect(screen.get('[aria-label="Filter by category"]').text()).toContain('General')
+    router.forward()
+    await flushPromises()
+    expect(screen.text()).toContain('No transactions found')
+  })
+
+  it.each([
+    ['?category=unknown&sort=nope&page=99', {}, 'Yuna Kim', '5'],
+    [
+      '?category=Education&sort=Oldest&page=99',
+      { category: 'Education', sort: 'Oldest' },
+      'Elevate Education',
+      undefined,
+    ],
+    ['?category=&sort=Latest&page=1', {}, 'Emma Richardson', undefined],
+    [
+      '?category=Bills&category=General&sort=Lowest&sort=Highest&page=-2',
+      {},
+      'Emma Richardson',
+      undefined,
+    ],
+  ])(
+    'restores and normalizes category/sort URLs: %s',
+    async (query, constraints, firstName, page) => {
+      const { screen, router } = await renderApp(`/transactions${query}`)
+      expect(router.currentRoute.value.query).toEqual({ ...constraints, ...(page ? { page } : {}) })
+      expect(screen.get('tbody th').text()).toBe(firstName)
+      expect(screen.get('[aria-label="Sort transactions"]').text()).toContain(
+        'sort' in constraints ? constraints.sort : 'Latest',
+      )
+      expect(screen.get('[aria-label="Filter by category"]').text()).toContain(
+        'category' in constraints ? constraints.category : 'All Transactions',
+      )
+    },
+  )
+
+  it('orders constrained records before taking a page and restores controls with memory history', async () => {
+    const { screen, router } = await renderApp('/transactions?category=General&sort=Lowest&page=2')
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual(['Buzz Marketing Group'])
+    await choose(screen, 'Sort transactions', 'Highest')
+    expect(router.currentRoute.value.query).toEqual({ category: 'General', sort: 'Highest' })
+    await choose(screen, 'Filter by category', 'All Transactions')
+    expect(router.currentRoute.value.query).toEqual({ sort: 'Highest' })
+    router.back()
+    await flushPromises()
+    expect(screen.get('[aria-label="Filter by category"]').text()).toContain('General')
+    router.back()
+    await flushPromises()
+    expect(screen.get('[aria-label="Sort transactions"]').text()).toContain('Lowest')
+    expect(screen.find('[aria-current="page"][aria-label="Page 2"]').exists()).toBe(true)
+    router.forward()
+    await flushPromises()
+    expect(screen.get('tbody th').text()).toBe('Buzz Marketing Group')
+    await choose(screen, 'Sort transactions', 'Latest')
+    expect(router.currentRoute.value.query).toEqual({ category: 'General' })
+  })
+  it.each([
+    ['Latest', ['Beta|+$75.50', 'Alpha|-$5.00', 'Alpha|-$100.00', 'Zulu|-$5.00']],
+    ['Oldest', ['Zulu|-$5.00', 'Beta|+$75.50', 'Alpha|-$5.00', 'Alpha|-$100.00']],
+    ['A to Z', ['Alpha|-$5.00', 'Alpha|-$100.00', 'Beta|+$75.50', 'Zulu|-$5.00']],
+    ['Z to A', ['Zulu|-$5.00', 'Beta|+$75.50', 'Alpha|-$5.00', 'Alpha|-$100.00']],
+    ['Highest', ['Beta|+$75.50', 'Alpha|-$5.00', 'Zulu|-$5.00', 'Alpha|-$100.00']],
+    ['Lowest', ['Alpha|-$100.00', 'Alpha|-$5.00', 'Zulu|-$5.00', 'Beta|+$75.50']],
+  ])('sorts by %s with stable same-day, name and signed-amount ties', async (sort, expected) => {
+    const base = original[0]!
+    demo.transactions.splice(
+      0,
+      demo.transactions.length,
+      { ...base, name: 'Beta', amount: 75.5, date: '2024-08-02T01:00:00Z' },
+      { ...base, name: 'Alpha', amount: -5, date: '2024-08-02T23:00:00Z' },
+      { ...base, name: 'Alpha', amount: -100, date: '2024-08-02T12:00:00Z' },
+      { ...base, name: 'Zulu', amount: -5, date: '2024-08-01T23:59:00Z' },
+    )
+    const { screen, router } = await renderApp('/transactions')
+    await screen.get('[role="combobox"][aria-label="Sort transactions"]').trigger('click')
+    expect(screen.findAll('[role="option"]').map((option) => option.text())).toEqual([
+      'Latest',
+      'Oldest',
+      'A to Z',
+      'Z to A',
+      'Highest',
+      'Lowest',
+    ])
+    await screen
+      .findAll('[role="option"]')
+      .find((option) => option.text() === sort)!
+      .trigger('click')
+    await flushPromises()
+    expect(
+      screen
+        .findAll('tbody tr')
+        .map((row) => `${row.get('th').text()}|${row.get('.transaction-amount').text()}`),
+    ).toEqual(expected)
+    expect(router.currentRoute.value.query).toEqual(sort === 'Latest' ? {} : { sort })
+  })
+  it('offers every transaction category alphabetically and applies only one before pagination', async () => {
+    const { screen, router } = await renderApp('/transactions?page=3')
+    await screen.get('[role="combobox"][aria-label="Filter by category"]').trigger('click')
+    expect(screen.findAll('[role="option"]').map((option) => option.text())).toEqual([
+      'All Transactions',
+      'Bills',
+      'Dining Out',
+      'Education',
+      'Entertainment',
+      'General',
+      'Groceries',
+      'Lifestyle',
+      'Personal Care',
+      'Shopping',
+      'Transportation',
+    ])
+    await screen
+      .findAll('[role="option"]')
+      .find((option) => option.text() === 'Education')!
+      .trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ category: 'Education' })
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Elevate Education',
+      'Elevate Education',
+    ])
+    expect(screen.find('nav[aria-label="Transaction pages"]').exists()).toBe(false)
+    await choose(screen, 'Filter by category', 'General')
+    expect(
+      screen.findAll('tbody td.transaction-category').every((cell) => cell.text() === 'General'),
+    ).toBe(true)
+    expect(screen.findAll('tbody tr')).toHaveLength(10)
+    expect(screen.find('nav[aria-label="Transaction pages"]').exists()).toBe(true)
+  })
   it('keeps typing as a draft and applies a trimmed case-insensitive name substring on submit', async () => {
     const { screen, router } = await renderApp('/transactions?page=2')
     const input = screen.get('input[aria-label="Search transactions"]')

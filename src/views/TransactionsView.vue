@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import BaseInput from '@/components/BaseInput.vue'
+import BaseSelect from '@/components/BaseSelect.vue'
 import BaseButton from '@/components/BaseButton.vue'
 import IconSearch from '@/components/icons/IconSearch.vue'
+import IconSort from '@/components/icons/IconSort.vue'
+import IconFilter from '@/components/icons/IconFilter.vue'
 import { useRoute, useRouter } from 'vue-router'
 import TransactionPagination from '@/components/TransactionPagination.vue'
 import demo from '@/data/demo.json'
@@ -14,13 +17,15 @@ const avatarAssets = import.meta.glob<string>('@/assets/images/avatars/*.jpg', {
   query: '?url',
   import: 'default',
 })
-const transactions = demo.transactions
-  .map((transaction, index) => ({
-    ...transaction,
-    index,
-    calendarDate: transaction.date.slice(0, 10),
-  }))
-  .sort((a, b) => b.calendarDate.localeCompare(a.calendarDate))
+const transactions = demo.transactions.map((transaction, index) => ({
+  ...transaction,
+  index,
+  calendarDate: new Date(transaction.date).toISOString().slice(0, 10),
+}))
+const sortOptions = ['Latest', 'Oldest', 'A to Z', 'Z to A', 'Highest', 'Lowest'].map((label) => ({
+  value: label,
+  label,
+}))
 
 const route = useRoute()
 const router = useRouter()
@@ -29,11 +34,63 @@ const appliedSearch = computed(() =>
   typeof route.query.search === 'string' ? route.query.search.trim() : '',
 )
 const draftSearch = ref(appliedSearch.value)
-const matchingTransactions = computed(() =>
-  transactions.filter((transaction) =>
-    transaction.name.toLowerCase().includes(appliedSearch.value.toLowerCase()),
-  ),
+const categoryOptions = [
+  { value: '', label: 'All Transactions' },
+  ...[...new Set(transactions.map((transaction) => transaction.category))]
+    .sort((a, b) => a.localeCompare(b))
+    .map((category) => ({ value: category, label: category })),
+]
+const category = computed(() =>
+  categoryOptions.some((option) => option.value === route.query.category)
+    ? String(route.query.category)
+    : '',
 )
+const sort = computed(() =>
+  sortOptions.some((option) => option.value === route.query.sort)
+    ? String(route.query.sort)
+    : 'Latest',
+)
+const matchingTransactions = computed(() =>
+  transactions
+    .filter(
+      (transaction) =>
+        transaction.name.toLowerCase().includes(appliedSearch.value.toLowerCase()) &&
+        (!category.value || transaction.category === category.value),
+    )
+    .sort((a, b) => {
+      let comparison = 0
+      switch (sort.value) {
+        case 'Oldest':
+          comparison = a.calendarDate.localeCompare(b.calendarDate)
+          break
+        case 'A to Z':
+          comparison = a.name.localeCompare(b.name)
+          break
+        case 'Z to A':
+          comparison = b.name.localeCompare(a.name)
+          break
+        case 'Highest':
+          comparison = b.amount - a.amount
+          break
+        case 'Lowest':
+          comparison = a.amount - b.amount
+          break
+        default:
+          comparison = b.calendarDate.localeCompare(a.calendarDate)
+      }
+      return comparison || a.index - b.index
+    }),
+)
+
+async function changeSort(value: string) {
+  await router.push({
+    query: { ...route.query, sort: value === 'Latest' ? undefined : value, page: undefined },
+  })
+}
+
+async function changeCategory(value: string) {
+  await router.push({ query: { ...route.query, category: value || undefined, page: undefined } })
+}
 const pageCount = computed(() =>
   Math.max(1, Math.ceil(matchingTransactions.value.length / pageSize)),
 )
@@ -48,9 +105,21 @@ watch(
     draftSearch.value = appliedSearch.value
     const normalizedPage = page.value === 1 ? undefined : String(page.value)
     const normalizedSearch = appliedSearch.value || undefined
-    if (query.page !== normalizedPage || query.search !== normalizedSearch) {
+    const normalizedSort = sort.value === 'Latest' ? undefined : sort.value
+    if (
+      query.page !== normalizedPage ||
+      query.search !== normalizedSearch ||
+      query.category !== (category.value || undefined) ||
+      query.sort !== normalizedSort
+    ) {
       void router.replace({
-        query: { ...query, page: normalizedPage, search: normalizedSearch },
+        query: {
+          ...query,
+          page: normalizedPage,
+          search: normalizedSearch,
+          category: category.value || undefined,
+          sort: normalizedSort,
+        },
       })
     }
   },
@@ -95,38 +164,62 @@ async function changePage(nextPage: number) {
       Transactions
     </h1>
     <section aria-label="Transaction history" class="min-w-0 rounded-xl bg-white px-5 py-6 md:p-8">
-      <form
-        role="search"
-        aria-label="Search transactions"
-        class="w-full md:mb-6 md:max-w-80"
-        @submit.prevent="submitSearch"
-      >
-        <BaseInput
-          v-model="draftSearch"
-          label="Search transactions"
+      <div class="flex min-w-0 items-center gap-4 md:mb-6 md:gap-6">
+        <form
+          role="search"
           aria-label="Search transactions"
-          hide-label
-          placeholder="Search transaction"
-          type="search"
+          class="min-w-0 flex-1 xl:mr-auto xl:max-w-80"
+          @submit.prevent="submitSearch"
         >
-          <template #trailing>
-            <BaseButton
-              type="submit"
-              variant="tertiary"
-              aria-label="Submit search"
-              class="size-9 cursor-pointer text-gray-900"
-            >
-              <IconSearch />
-            </BaseButton>
-          </template>
-        </BaseInput>
-      </form>
+          <BaseInput
+            v-model="draftSearch"
+            label="Search transactions"
+            aria-label="Search transactions"
+            hide-label
+            placeholder="Search transaction"
+            type="search"
+          >
+            <template #trailing>
+              <BaseButton
+                type="submit"
+                variant="tertiary"
+                aria-label="Submit search"
+                class="size-9 cursor-pointer text-gray-900"
+              >
+                <IconSearch />
+              </BaseButton>
+            </template>
+          </BaseInput>
+        </form>
+        <BaseSelect
+          inline
+          label="Sort by"
+          aria-label="Sort transactions"
+          :model-value="sort"
+          :options="sortOptions"
+          @update:model-value="changeSort"
+          ><template #icon><IconSort /></template
+        ></BaseSelect>
+        <BaseSelect
+          inline
+          :active="Boolean(category)"
+          label="Category"
+          aria-label="Filter by category"
+          :model-value="category"
+          :options="categoryOptions"
+          @update:model-value="changeCategory"
+          ><template #icon><IconFilter /></template
+        ></BaseSelect>
+      </div>
       <p v-if="matchingTransactions.length === 0" class="py-6 text-center text-gray-500">
         No transactions found
       </p>
       <table v-else class="w-full table-fixed border-collapse">
         <caption class="sr-only">
-          Latest transactions, ordered by UTC calendar date
+          Transactions, sorted by
+          {{
+            sort
+          }}
         </caption>
         <thead class="sr-only md:not-sr-only">
           <tr class="border-b border-gray-100 text-left text-preset-5 text-gray-500">

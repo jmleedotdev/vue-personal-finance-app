@@ -11,6 +11,8 @@ const {
   disabled = false,
   help = '',
   error = '',
+  inline = false,
+  active = false,
 } = defineProps<{
   label: string
   options: readonly { value: string; label: string }[]
@@ -18,12 +20,16 @@ const {
   disabled?: boolean
   help?: string
   error?: string
+  inline?: boolean
+  active?: boolean
 }>()
 const model = defineModel<string>({ default: '' })
 const id = useId()
 const describedBy = computed(
   () =>
-    [help ? `${id}-help` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ') || undefined,
+    [inline ? `${id}-value` : '', help ? `${id}-help` : '', error ? `${id}-error` : '']
+      .filter(Boolean)
+      .join(' ') || undefined,
 )
 const open = ref(false)
 const trigger = useTemplateRef('trigger')
@@ -135,22 +141,41 @@ watch(unavailable, (value) => {
 
 watch(activeId, async (optionId) => {
   await nextTick()
-  if (optionId) document.getElementById(optionId)?.scrollIntoView?.({ block: 'nearest' })
+  if (!optionId) return
+  const option = document.getElementById(optionId)
+  const list = option?.parentElement
+  if (!option || !list) return
+  // Reveal the active option within the menu without scrolling the page.
+  if (option.offsetTop < list.scrollTop) list.scrollTop = option.offsetTop
+  else if (option.offsetTop + option.offsetHeight > list.scrollTop + list.clientHeight) {
+    list.scrollTop = option.offsetTop + option.offsetHeight - list.clientHeight
+  }
 })
 
 function select(index: number, restoreFocus = true) {
   const option = options[index]
   if (option && !unavailable.value && option.value !== model.value) model.value = option.value
   open.value = false
-  if (restoreFocus) trigger.value?.focus()
+  if (restoreFocus) trigger.value?.focus({ preventScroll: true })
 }
 </script>
 
 <template>
-  <div ref="root" class="flex flex-col gap-1" @focusout="onFocusout">
-    <label :id="`${id}-label`" :for="id" class="text-preset-5 font-bold text-gray-500">{{
-      label
-    }}</label>
+  <div
+    ref="root"
+    :class="inline ? 'flex shrink-0 items-center gap-2' : 'flex flex-col gap-1'"
+    @focusout="onFocusout"
+  >
+    <label
+      :id="`${id}-label`"
+      :for="id"
+      :class="
+        inline
+          ? 'sr-only text-preset-4 whitespace-nowrap text-gray-500 md:not-sr-only'
+          : 'text-preset-5 font-bold text-gray-500'
+      "
+      >{{ label }}</label
+    >
     <div class="relative">
       <button
         v-bind="$attrs"
@@ -160,18 +185,36 @@ function select(index: number, restoreFocus = true) {
         :disabled="unavailable"
         role="combobox"
         aria-haspopup="listbox"
-        :aria-labelledby="`${id}-label`"
+        :aria-labelledby="$attrs['aria-label'] ? undefined : `${id}-label`"
+        :data-active="active || undefined"
         :aria-expanded="open"
         :aria-describedby="describedBy"
         :aria-invalid="error ? true : undefined"
         :aria-controls="open ? `${id}-listbox` : undefined"
         :aria-activedescendant="activeId"
-        class="flex min-h-[45px] w-full items-center justify-between gap-4 rounded-lg border border-beige-500 bg-white px-5 py-[11px] text-left text-preset-4 text-gray-900 focus:border-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 enabled:not-focus:not-aria-invalid:hover:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50 aria-invalid:border-red"
+        class="flex min-h-[45px] w-full items-center justify-between gap-4 rounded-lg bg-white text-left text-preset-4 text-gray-900 focus:border-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 enabled:not-focus:not-aria-invalid:hover:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50 aria-invalid:border-red"
+        :class="
+          inline
+            ? 'justify-center px-1 data-[active=true]:bg-beige-100 data-[active=true]:text-green md:justify-between md:border md:border-beige-500 md:px-5 md:py-[11px] md:data-[active=true]:bg-white md:data-[active=true]:text-gray-900'
+            : 'border border-beige-500 px-5 py-[11px]'
+        "
         @click="toggle"
         @keydown="onKeydown"
       >
-        <span :class="selected ? '' : 'text-beige-500'">{{ selected?.label ?? placeholder }}</span>
-        <span class="flex size-4 shrink-0 items-center justify-center"
+        <span v-if="inline" class="flex size-6 items-center justify-center md:hidden"
+          ><slot name="icon"
+        /></span>
+        <span
+          :id="`${id}-value`"
+          :class="[
+            selected ? '' : 'text-beige-500',
+            inline ? 'sr-only whitespace-nowrap md:not-sr-only' : '',
+          ]"
+          >{{ selected?.label ?? placeholder }}</span
+        >
+        <span
+          :class="inline ? 'hidden md:flex' : 'flex'"
+          class="size-4 shrink-0 items-center justify-center"
           ><img :src="caretDown" alt=""
         /></span>
       </button>
@@ -180,7 +223,8 @@ function select(index: number, restoreFocus = true) {
         :id="`${id}-listbox`"
         role="listbox"
         :aria-labelledby="`${id}-label`"
-        class="absolute top-full z-10 mt-4 max-h-72 w-full overflow-y-auto rounded-lg bg-white px-5 py-3 shadow-[0_4px_24px_0_#00000040]"
+        class="absolute top-full z-10 mt-4 max-h-72 overflow-y-auto rounded-lg bg-white px-5 py-3 shadow-[0_4px_24px_0_#00000040]"
+        :class="inline ? 'right-0 w-max max-w-[calc(100vw-4.5rem)] min-w-full' : 'w-full'"
       >
         <li
           v-for="(option, index) in options"
