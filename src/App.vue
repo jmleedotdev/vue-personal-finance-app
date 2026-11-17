@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterView } from 'vue-router'
+import AppNavigation from '@/components/AppNavigation.vue'
 </script>
 
 <template>
-  <header>
-    <div class="wrapper">
-      <nav>
-        <RouterLink to="/">Home</RouterLink>
-        <RouterLink to="/about">About</RouterLink>
-      </nav>
-    </div>
-  </header>
-
-  <RouterView />
+  <a
+    href="#main-content"
+    class="sr-only z-30 rounded-lg bg-white p-4 text-gray-900 focus:not-sr-only focus:fixed focus:top-4 focus:left-4"
+    >Skip to content</a
+  >
+  <div class="min-h-dvh xl:flex xl:items-start">
+    <AppNavigation />
+    <RouterView />
+  </div>
 </template>
-
-<style scoped></style>

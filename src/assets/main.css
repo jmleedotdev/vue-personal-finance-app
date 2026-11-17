@@ -53,6 +53,10 @@
 }
 
 @layer base {
+  html {
+    @apply scroll-pb-[calc(84px+env(safe-area-inset-bottom))] md:scroll-pb-[calc(109px+env(safe-area-inset-bottom))] xl:scroll-pb-4;
+  }
+
   body {
     @apply bg-beige-100 font-sans text-preset-4 text-gray-900;
   }
