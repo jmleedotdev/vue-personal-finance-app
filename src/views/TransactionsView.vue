@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import IconSearch from '@/components/icons/IconSearch.vue'
 import { useRoute, useRouter } from 'vue-router'
 import TransactionPagination from '@/components/TransactionPagination.vue'
 import demo from '@/data/demo.json'
@@ -22,25 +25,47 @@ const transactions = demo.transactions
 const route = useRoute()
 const router = useRouter()
 const pageSize = 10
-const pageCount = Math.max(1, Math.ceil(transactions.length / pageSize))
+const appliedSearch = computed(() =>
+  typeof route.query.search === 'string' ? route.query.search.trim() : '',
+)
+const draftSearch = ref(appliedSearch.value)
+const matchingTransactions = computed(() =>
+  transactions.filter((transaction) =>
+    transaction.name.toLowerCase().includes(appliedSearch.value.toLowerCase()),
+  ),
+)
+const pageCount = computed(() =>
+  Math.max(1, Math.ceil(matchingTransactions.value.length / pageSize)),
+)
 const page = computed(() => {
   const value = route.query.page
   const requested = typeof value === 'string' && /^[1-9]\d*$/.test(value) ? Number(value) : 1
-  return Math.min(requested, pageCount)
+  return Math.min(requested, pageCount.value)
 })
 watch(
-  () => route.query.page,
-  (value) => {
-    const normalized = page.value === 1 ? undefined : String(page.value)
-    if (value !== normalized) {
-      void router.replace({ query: { ...route.query, page: normalized } })
+  () => route.query,
+  (query) => {
+    draftSearch.value = appliedSearch.value
+    const normalizedPage = page.value === 1 ? undefined : String(page.value)
+    const normalizedSearch = appliedSearch.value || undefined
+    if (query.page !== normalizedPage || query.search !== normalizedSearch) {
+      void router.replace({
+        query: { ...query, page: normalizedPage, search: normalizedSearch },
+      })
     }
   },
   { immediate: true },
 )
 const visibleTransactions = computed(() =>
-  transactions.slice((page.value - 1) * pageSize, page.value * pageSize),
+  matchingTransactions.value.slice((page.value - 1) * pageSize, page.value * pageSize),
 )
+
+async function submitSearch() {
+  draftSearch.value = draftSearch.value.trim()
+  await router.push({
+    query: { ...route.query, search: draftSearch.value || undefined, page: undefined },
+  })
+}
 
 const heading = useTemplateRef<HTMLHeadingElement>('heading')
 
@@ -70,7 +95,33 @@ async function changePage(nextPage: number) {
       Transactions
     </h1>
     <section aria-label="Transaction history" class="min-w-0 rounded-xl bg-white px-5 py-6 md:p-8">
-      <p v-if="transactions.length === 0" class="py-6 text-center text-gray-500">
+      <form
+        role="search"
+        aria-label="Search transactions"
+        class="w-full md:mb-6 md:max-w-80"
+        @submit.prevent="submitSearch"
+      >
+        <BaseInput
+          v-model="draftSearch"
+          label="Search transactions"
+          aria-label="Search transactions"
+          hide-label
+          placeholder="Search transaction"
+          type="search"
+        >
+          <template #trailing>
+            <BaseButton
+              type="submit"
+              variant="tertiary"
+              aria-label="Submit search"
+              class="size-9 cursor-pointer text-gray-900"
+            >
+              <IconSearch />
+            </BaseButton>
+          </template>
+        </BaseInput>
+      </form>
+      <p v-if="matchingTransactions.length === 0" class="py-6 text-center text-gray-500">
         No transactions found
       </p>
       <table v-else class="w-full table-fixed border-collapse">

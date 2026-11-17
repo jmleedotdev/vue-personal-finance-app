@@ -16,13 +16,157 @@ async function renderApp(path = '/') {
   const router = createRouter({ history: createMemoryHistory(), routes })
   await router.push(path)
   await router.isReady()
-  const screen = mount(App, { global: { plugins: [router] } })
+  const screen = mount(App, { attachTo: document.body, global: { plugins: [router] } })
   screens.push(screen)
   await flushPromises()
   return { screen, router }
 }
 
 describe('Transactions', () => {
+  it('keeps typing as a draft and applies a trimmed case-insensitive name substring on submit', async () => {
+    const { screen, router } = await renderApp('/transactions?page=2')
+    const input = screen.get('input[aria-label="Search transactions"]')
+    await input.setValue('  rIcHaRd  ')
+    expect(screen.get('tbody th').text()).toBe('Ella Phillips')
+    expect(router.currentRoute.value.fullPath).toBe('/transactions?page=2')
+    await screen.get('form[role="search"]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ search: 'rIcHaRd' })
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Emma Richardson',
+      'Emma Richardson',
+    ])
+    expect(screen.find('nav[aria-label="Transaction pages"]').exists()).toBe(false)
+    expect((input.element as HTMLInputElement).value).toBe('rIcHaRd')
+  })
+
+  it('applies the draft through the accessible magnifying-glass button', async () => {
+    const { screen, router } = await renderApp('/transactions')
+    await screen.get('input').setValue('  SUN  ')
+    await screen.get('button[aria-label="Submit search"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ search: 'SUN' })
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual(['Sun Park', 'Sun Park'])
+  })
+
+  it.each(['General', '75.50', 'not a sender'])(
+    'matches names only and keeps search usable for no matches: %s',
+    async (search) => {
+      const { screen, router } = await renderApp('/transactions')
+      await screen.get('input').setValue(search)
+      await screen.get('form[role="search"]').trigger('submit')
+      await flushPromises()
+      expect(router.currentRoute.value.query).toEqual({ search })
+      expect(screen.text()).toContain('No transactions found')
+      expect(screen.findAll('tbody tr')).toHaveLength(0)
+      expect(screen.find('nav[aria-label="Transaction pages"]').exists()).toBe(false)
+      expect(
+        screen.get('button[aria-label="Submit search"]').attributes('disabled'),
+      ).toBeUndefined()
+      expect(screen.text()).not.toContain('Clear filters')
+      await screen.get('input').setValue('   ')
+      await screen.get('form[role="search"]').trigger('submit')
+      await flushPromises()
+      expect(router.currentRoute.value.query).toEqual({})
+      expect(screen.findAll('tbody tr')).toHaveLength(10)
+      expect(screen.get('tbody th').text()).toBe('Emma Richardson')
+    },
+  )
+
+  it.each([
+    ['?search=%20Emma%20&page=99', 'Emma', ['Emma Richardson', 'Emma Richardson']],
+    ['?search=&page=1', '', ['Emma Richardson', 'Savory Bites Bistro']],
+    ['?search=Emma&search=Sun', '', ['Emma Richardson', 'Savory Bites Bistro']],
+  ])('initializes and normalizes applied search from %s', async (query, applied, firstNames) => {
+    const { screen, router } = await renderApp(`/transactions${query}`)
+    expect((screen.get('input').element as HTMLInputElement).value).toBe(applied)
+    expect(
+      screen
+        .findAll('tbody th')
+        .slice(0, 2)
+        .map((row) => row.text()),
+    ).toEqual(firstNames)
+    expect(router.currentRoute.value.query).toEqual(applied ? { search: applied } : {})
+  })
+
+  it('keeps multi-page matches navigable, retains applied search when paging, and restores history over drafts', async () => {
+    const base = original[0]!
+    demo.transactions.splice(
+      0,
+      demo.transactions.length,
+      ...Array.from({ length: 12 }, (_, index) => ({
+        ...base,
+        name: `Matching sender ${index + 1}`,
+        amount: index + 1,
+      })),
+      { ...base, name: 'Other sender' },
+    )
+    const { screen, router } = await renderApp('/transactions?page=2&other=keep')
+    const input = screen.get('input')
+    const names = () => screen.findAll('tbody th').map((row) => row.text())
+    await input.setValue('matching')
+    await screen.get('form[role="search"]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ search: 'matching', other: 'keep' })
+    expect(names()).toEqual([
+      'Matching sender 1',
+      'Matching sender 2',
+      'Matching sender 3',
+      'Matching sender 4',
+      'Matching sender 5',
+      'Matching sender 6',
+      'Matching sender 7',
+      'Matching sender 8',
+      'Matching sender 9',
+      'Matching sender 10',
+    ])
+    await input.setValue('unsubmitted')
+    await screen.get('button[aria-label="Next page"]').trigger('click')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({
+      search: 'matching',
+      page: '2',
+      other: 'keep',
+    })
+    expect(names()).toEqual(['Matching sender 11', 'Matching sender 12'])
+    expect(screen.get('button[aria-label="Next page"]').attributes('disabled')).toBeDefined()
+    await input.setValue('another draft')
+    router.back()
+    await flushPromises()
+    expect((input.element as HTMLInputElement).value).toBe('matching')
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+    router.back()
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ page: '2', other: 'keep' })
+    expect((input.element as HTMLInputElement).value).toBe('')
+    expect(names()).toEqual(['Matching sender 11', 'Matching sender 12', 'Other sender'])
+    router.forward()
+    await flushPromises()
+    expect((input.element as HTMLInputElement).value).toBe('matching')
+    await screen.get('form[role="search"]').trigger('submit')
+    await flushPromises()
+    router.back()
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ page: '2', other: 'keep' })
+  })
+
+  it.each([10, 11])(
+    'calculates page counts from %i matching records rather than all records',
+    async (count) => {
+      const base = original[0]!
+      demo.transactions.splice(
+        0,
+        demo.transactions.length,
+        ...Array.from({ length: count }, () => ({ ...base, name: 'Match' })),
+        { ...base, name: 'Excluded' },
+      )
+      const { screen, router } = await renderApp('/transactions?search=Match&page=999')
+      expect(screen.findAll('tbody tr')).toHaveLength(count === 10 ? 10 : 1)
+      expect(router.currentRoute.value.query.page).toBe(count === 10 ? undefined : '2')
+      expect(screen.find('nav[aria-label="Transaction pages"]').exists()).toBe(count === 11)
+    },
+  )
+
   it.each([
     ['', undefined, 'Emma Richardson'],
     ['?page=1', undefined, 'Emma Richardson'],
