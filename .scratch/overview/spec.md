@@ -12,7 +12,7 @@ Implementation should prioritize completing the views with supplied demo data, n
 
 First establish a small, Figma-aligned design system: shared colors, local typography, and reusable controls such as buttons and input fields. Then use those foundations to build the responsive app shell and Overview from the three supplied Figma frames.
 
-The Overview displays supplied balance figures, recent transactions, savings pots, August 2024 budget spending, and explicitly defined demo recurring-bill summaries. All five pots contribute to Total Saved and remain reachable through a vertically scrollable preview. Desktop uses a collapsible sidebar; tablet and mobile use bottom navigation. Unimplemented destinations remain clearly unavailable rather than pretending their pages work.
+The Overview displays supplied balance figures, recent transactions, savings pots, August 2024 budget spending, and recurring-bill summaries calculated from the supplied transactions. All five pots contribute to Total Saved and remain reachable through a vertically scrollable preview. Desktop uses a collapsible sidebar; tablet and mobile use bottom navigation. Unimplemented destinations remain clearly unavailable rather than pretending their pages work.
 
 This milestone is a frontend-only, client-rendered Vue SPA. Changes need not survive a refresh. Work on other views, offline operation, registration, and a separate backend follows later and is not specified here.
 
@@ -48,8 +48,8 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 28. As a user, I want the budget chart's center to show $338 spent against a $975 limit, so that I can see the month's budget overview.
 29. As a user, I want budget category names, colors, and limits alongside the chart, so that its presentation has understandable context.
 30. As a user, I want the budget legend to move below the chart on mobile, so that labels remain legible at narrow widths.
-31. As a user, I want the three recurring-bill summaries shown in Figma, so that the Overview is visually complete before billing rules are implemented.
-32. As a developer, I want recurring-bill summary figures explicitly identified as demo fixtures, so that future work does not mistake them for derived billing logic.
+31. As a user, I want Paid Bills, Total Upcoming, and Due Soon calculated from recurring payment history, so that the Overview reflects the supplied transactions.
+32. As a user, I want overdue bills included in Due Soon, so that unpaid bills needing attention remain visible.
 33. As a developer, I want imported local icons, logos, and avatars rather than temporary Figma URLs, so that production rendering does not depend on expiring asset links.
 34. As the app owner, I want irrelevant starter pages, assets, and assertions removed, so that the repository reflects the product being built.
 35. As a developer, I want fast tests of observable behavior and narrowly targeted browser validation, so that verification remains useful without slowing ordinary iteration unnecessarily.
@@ -94,7 +94,12 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 - Use an explicit August 2024 demo reporting period, not the current system month. Sum outgoing transactions in that month belonging to the configured budget categories; income and July expenses do not contribute to this total.
 - The resulting spending is Entertainment $15, Bills $150, Dining Out $133, and Personal Care $40: $338 total. Configured budget limits total $975.
 - Match the budget chart and legend presentation in Figma, including the mobile legend arrangement. Limit the legend to four initially visible categories (four rows on desktop/tablet and a two-by-two arrangement on mobile); allow vertical keyboard, wheel, and touch scrolling to reach additional categories without expanding the card or moving the chart. The center figures are derived from the demo reporting period and budget limits. Owner-approved exception for ticket 05: use `@tanstack/charts` with its Vue adapter, with segment proportions derived from configured category budget limits (`maximum`), as explicitly confirmed by the owner. Spending remains independently calculated for the center figures. On segment hover, replace both center values with that category's spending and limit (e.g. `$15` above `of $50 limit` for Entertainment); restore overall spending and limit when no segment is hovered. Do not add tooltips (the owner reverted that request) or infer other chart interactions.
-- Store recurring-bill Overview summaries as explicitly named demo fixtures, separate from the unmodified JSON: Paid Bills $190.00; Total Upcoming $194.98; Due Soon $59.98. Do not pretend these values come from an agreed schedule, payment-status, or due-window calculation.
+- Calculate recurring-bill summaries from the unmodified demo JSON, using the explicit Reporting Date 19 August 2024 rather than the system date. Transaction dates represent completed payments; compare their UTC calendar dates, ignoring time of day.
+- Only `recurring: true` transactions identify Recurring Bills. Group them by exact payee `name`; select each payee's latest recorded payment on or before the Reporting Date, independent of input order. Future payments must not affect the current summaries. A positive recurring payment amount violates the domain invariant and must not be silently filtered out. Display payment magnitudes as positive totals.
+- Each selected payment establishes the bill's amount and monthly Billing Day. In shorter months, clamp the due date to the month's last day without changing the established Billing Day. Use the latest payment's day when a later payment changes it (e.g. Elevate Education changes from July 5 to August 4).
+- Paid Bills totals each bill once if it has a recorded payment in the reporting month on or before the Reporting Date. Total Upcoming totals bills still unpaid for that month, including overdue bills; do not include next month's recurrence of an already-paid bill. A past due date alone never proves payment.
+- Due Soon is the subset of Total Upcoming whose current-month due date is on or before seven calendar days after the Reporting Date, including overdue bills, bills due today, and the seventh day. It never includes next month's bills, even when the seven-day window crosses a month boundary.
+- With the supplied transactions and 19 August 2024 Reporting Date, the eight distinct bills produce Paid Bills $190.00 (four bills), Total Upcoming $194.98 (four bills), and Due Soon $59.98 (two bills). These are calculated expectations, not summary fixtures.
 - No changes need to survive reload, browser restart, or navigation to a future backend. Persistence is deliberately deferred, not accidentally omitted.
 
 ### Starter cleanup
@@ -107,7 +112,7 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 
 - The approved primary testing boundary is the rendered Overview assembled with app navigation. Prefer this existing screen-level interface over tests of each internal child component.
 - A good test asserts user-observable content, accessible state, or interactions, not component structure, private functions, Tailwind class strings, or implementation snapshots.
-- Use fast Vitest/Vue component tests for supplied summaries, all-pot inclusion and Total Saved, fixed-period budget figures, recent-transaction presentation, recurring-bill fixtures, navigation availability, and menu collapse/restore behavior.
+- Use fast Vitest/Vue component tests for supplied summaries, all-pot inclusion and Total Saved, fixed-period budget figures, recent-transaction presentation, calculated recurring-bill summaries (including duplicate history, future-payment exclusion, current-month scope, and overdue/seven-day boundaries), navigation availability, and menu collapse/restore behavior.
 - Apply the same public-behavior principle to the newly requested shared controls: verify button activation/disabled behavior and input labels, value updates, disabled behavior, and accessible help/error associations. These tests exercise rendered controls rather than styling internals.
 - Do not use jsdom assertions as evidence that scrolling or responsive geometry actually works. Confirm those behaviors in a real browser.
 - Use narrowly targeted, explicitly invoked Chromium validation at the desktop, tablet, and mobile reference sizes for layout overflow, responsive navigation, bottom-navigation clearance, and actual keyboard/touch-accessible pot scrolling. Avoid a routine three-browser matrix.
@@ -121,7 +126,7 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 - Registration, login, authorization, account migration, real financial records, bank integrations, or backend implementation/API contracts.
 - Persistent browser storage, offline edits that survive refresh, service workers, installability, application caching guarantees, synchronization, or conflict resolution.
 - Treating ordinary static asset bundling as proof that a deployed app can reopen offline. The eventual offline requirement is deferred, not canceled or solved by this milestone.
-- Real recurring-bill schedule inference, payment reconciliation, or due-soon rules.
+- Bank/payment reconciliation, arbitrary billing frequencies, and historical arrears across earlier reporting months. Monthly demo bill calculations follow the explicitly agreed rules above.
 - A broad design-system catalog, new component framework, a complete form system, or controls unrelated to the supplied designs and immediate shared button/input foundation.
 - SSR, an extensive end-to-end suite, comprehensive screenshot-regression infrastructure, and unrelated refactoring.
 
@@ -139,6 +144,6 @@ Private design URLs are stored in `references.local.md` beside this spec. That f
 
 - The supplied assets include navigation/control SVGs, both logos, all referenced avatars, and Public Sans font files. Use these local sources; temporary Figma export URLs are not runtime assets.
 - The JSON includes 49 transactions, four budgets, and five pots. It contains no explicit recurring-bill summary object or complete billing schedule.
-- The owner explicitly approved $920 Total Saved, Gift at $110, scroll access to Holiday, August 2024 budget calculations, and the three recurring-bill demo fixtures. These take precedence over inconsistent screenshot numbers or a non-scrollable four-pot preview.
+- The owner explicitly approved $920 Total Saved, Gift at $110, scroll access to Holiday, August 2024 budget calculations, and the three recurring-bill summary amounts. The owner subsequently replaced fixed fixtures with the monthly payment-history rules above, confirmed a 19 August 2024 Reporting Date, and included overdue bills in Due Soon. These take precedence over inconsistent screenshot numbers or a non-scrollable four-pot preview.
 - No application implementation has started. This spec records the discussion and the owner's additional request to deliver shared design foundations first.
 - The next planning step is an owner-reviewed breakdown into small, verifiable tickets. Publishing this spec does not authorize implementing it or generating tickets without the corresponding request/approval.
