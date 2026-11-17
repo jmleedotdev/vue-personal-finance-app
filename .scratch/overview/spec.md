@@ -134,7 +134,7 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 
 ### Design references
 
-Private design URLs are stored in `references.local.md` beside this spec. That file is Git-ignored and must be provided separately in another checkout or environment. Keep the URLs out of tracked specs, tickets, documentation, and source code.
+Private design URLs are stored in `.scratch/references.local.md`, with cached design screenshots in `.scratch/design.local/`. Both locations are Git-ignored and must be provided separately in another checkout or environment. Keep the URLs and screenshots out of tracked specs, tickets, documentation, and source code.
 
 - Desktop Overview: 1440 × 1064.
 - Tablet Overview: 768 × 1923.

@@ -43,3 +43,5 @@ playwright-report/
 
 # Private, machine-local design references
 /.scratch/**/references.local.md
+/.scratch/references.local.md
+/.scratch/design.local/
