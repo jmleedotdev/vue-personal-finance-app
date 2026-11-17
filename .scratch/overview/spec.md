@@ -1,6 +1,6 @@
 # Shared Design System and Responsive Overview
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -41,7 +41,7 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 21. As a user, I want to scroll the pot preview vertically to reach Holiday, so that every supplied Pot is available without expanding the whole dashboard.
 22. As a keyboard or touch user, I want to operate the pot preview scroll area, so that its extra content is not restricted to mouse users.
 23. As a user, I want Total Saved to remain outside the scrollable preview, so that I retain the overall savings context while browsing pots.
-24. As a user, I want to see the five recent transactions represented in the design, so that I can scan recent activity.
+24. As a user, I want a scrollable preview of the first ten supplied transactions, with approximately five rows initially visible and the original five design entries first, so that I can scan more recent activity without expanding the card.
 25. As a user, I want transaction avatars, names, signed amounts, and dates, so that entries are recognizable and income is distinguishable from spending.
 26. As a user, I want dates and currency formatted consistently, so that the supplied demo records are easy to read.
 27. As a user, I want budget spending evaluated for August 2024, so that the historical demo remains meaningful regardless of today's date.
@@ -72,7 +72,7 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 - Use locally supplied Public Sans assets. Establish consistent typography for the evidenced presets: 32px bold with 1.2 line height, 20px bold with 1.2 line height, 16px bold with 1.5 line height, 14px regular/bold with 1.5 line height, and 12px regular with 1.5 line height.
 - Use Tailwind utility classes directly in Vue templates. Global CSS may contain Tailwind setup, font declarations, theme tokens, and necessary baseline rules. Named styling classes are exceptions justified by readability or manageability, not the default.
 - Build small shared button and input interfaces with native HTML semantics. Keep supported variants tied to the actual designs and required accessible interaction states rather than creating a comprehensive UI library.
-- Shared buttons must preserve native activation and disabled behavior. Shared input fields must support labels, value updates, and accessible help/error and disabled states. Do not add unrelated form validation frameworks or product forms.
+- Shared buttons must preserve native activation and disabled behavior. Shared input fields must support labels, value updates, and accessible help/error and disabled states. Owner-approved extension for ticket 01: provide a separate custom select-only combobox matching the supplied category field and dropdown list, with labeled string options, `v-model`, placeholder, disabled/help/error states, pointer selection, keyboard navigation/typeahead, dismissal, and focus management. Keep it separate from the text input; do not add search, multi-select, unrelated form validation frameworks, or product forms.
 - Use the supplied SVG assets without rewriting their artwork. Resolve local asset imports correctly for a production build; directory names or JSON-relative URLs alone are not a browser asset-loading strategy.
 - Retain font licensing information. Do not add a remote font or icon CDN dependency.
 
@@ -88,7 +88,7 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 
 - Preserve the supplied demo JSON as the source dataset. Do not modify its financial values to force agreement with stale screenshot values.
 - Treat supplied balance figures as independent demo summary values: Current Balance $4,836.00; Income $3,814.25; Expenses $1,700.50. Do not recompute them from an assumed opening balance or the available transaction subset.
-- Render the five recent entries shown in the Overview references, preserving the supplied preview sequence. Resolve their local avatars and show readable dates with positive and negative currency amounts. Avoid timezone-dependent shifts of the demonstrated calendar dates.
+- Render the first ten supplied transactions in dataset order, preserving the original five design entries first. This owner-approved revision supersedes the original five-entry limit. Keep the header outside a named, keyboard-focusable vertical scroll region with approximately five rows visible at a time; support keyboard, pointer, and touch scrolling to the tenth entry without expanding the card. Resolve all ten local avatars and show readable dates with positive and negative currency amounts. Avoid timezone-dependent shifts of the demonstrated calendar dates.
 - Total Saved is the sum saved across all five pots: $920. Gift is $110, not the screenshot's $40. Holiday contributes $531 even when its preview is outside the visible scroll area.
 - Keep the pot preview in a compact two-column layout with four pots initially visible. Include all five entries in the vertically scrollable region; do not simply omit Holiday or make the entire card scroll. Total Saved stays outside this region.
 - Use an explicit August 2024 demo reporting period, not the current system month. Sum outgoing transactions in that month belonging to the configured budget categories; income and July expenses do not contribute to this total.
@@ -115,7 +115,7 @@ This milestone is a frontend-only, client-rendered Vue SPA. Changes need not sur
 - Use fast Vitest/Vue component tests for supplied summaries, all-pot inclusion and Total Saved, fixed-period budget figures, recent-transaction presentation, calculated recurring-bill summaries (including duplicate history, future-payment exclusion, current-month scope, and overdue/seven-day boundaries), navigation availability, and menu collapse/restore behavior.
 - Apply the same public-behavior principle to the newly requested shared controls: verify button activation/disabled behavior and input labels, value updates, disabled behavior, and accessible help/error associations. These tests exercise rendered controls rather than styling internals.
 - Do not use jsdom assertions as evidence that scrolling or responsive geometry actually works. Confirm those behaviors in a real browser.
-- Use narrowly targeted, explicitly invoked Chromium validation at the desktop, tablet, and mobile reference sizes for layout overflow, responsive navigation, bottom-navigation clearance, and actual keyboard/touch-accessible pot scrolling. Avoid a routine three-browser matrix.
+- Use narrowly targeted, explicitly invoked Chromium validation at the desktop, tablet, and mobile reference sizes for layout overflow, responsive navigation, bottom-navigation clearance, and actual keyboard/touch-accessible pot and transaction scrolling, including access to the tenth transaction. Avoid a routine three-browser matrix.
 - Compare the rendered Overview with Figma for spacing, typography, colors, assets, and chart appearance. Verify intermediate and narrow widths are usable, not only the three reference dimensions.
 - Run type-checking and focused tests during implementation, and run the relevant full fast suite and production build before completion. Playwright is for browser-dependent risks, not the default loop for every UI edit.
 - Prior art: the repository already has Vue Test Utils and a jsdom-based Vitest setup but no meaningful source tests. Its existing Playwright test asserts obsolete starter content; replace or remove that assertion rather than preserving it as product coverage.
@@ -145,5 +145,6 @@ Private design URLs are stored in `references.local.md` beside this spec. That f
 - The supplied assets include navigation/control SVGs, both logos, all referenced avatars, and Public Sans font files. Use these local sources; temporary Figma export URLs are not runtime assets.
 - The JSON includes 49 transactions, four budgets, and five pots. It contains no explicit recurring-bill summary object or complete billing schedule.
 - The owner explicitly approved $920 Total Saved, Gift at $110, scroll access to Holiday, August 2024 budget calculations, and the three recurring-bill summary amounts. The owner subsequently replaced fixed fixtures with the monthly payment-history rules above, confirmed a 19 August 2024 Reporting Date, and included overdue bills in Due Soon. These take precedence over inconsistent screenshot numbers or a non-scrollable four-pot preview.
-- No application implementation has started. This spec records the discussion and the owner's additional request to deliver shared design foundations first.
-- The next planning step is an owner-reviewed breakdown into small, verifiable tickets. Publishing this spec does not authorize implementing it or generating tickets without the corresponding request/approval.
+- Implementation is complete and owner-approved. All six implementation tickets under `issues/` are resolved and retained as the decision and completion history. This spec consolidates the delivered scope, including the custom dropdown, ten-entry transaction preview, chart interactions, and calculated recurring-bill summaries.
+- Whole-feature Standards and Spec reviews were completed against `main`. The two findings—an overly broad responsive-test selector and stale README milestone descriptions—were fixed in commit `77e22ca`.
+- Final integration validation: all 39 unit tests and all 42 Chromium browser tests pass; production build and type-check pass. The owner confirmed the implementations are good. This close-out does not expand the milestone to the deferred destination pages, persistence, authentication, backend, or offline support.
