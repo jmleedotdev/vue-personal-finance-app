@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BalanceSummary from '@/components/BalanceSummary.vue'
+import PotsSummary from '@/components/PotsSummary.vue'
 </script>
 
 <template>
@@ -10,5 +11,10 @@ import BalanceSummary from '@/components/BalanceSummary.vue'
   >
     <h1 class="text-preset-1 md:flex md:h-14 md:items-center">Overview</h1>
     <BalanceSummary />
+    <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.42fr)_minmax(0,1fr)]">
+      <div class="min-w-0">
+        <PotsSummary />
+      </div>
+    </div>
   </main>
 </template>

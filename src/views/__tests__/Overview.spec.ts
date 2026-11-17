@@ -51,6 +51,37 @@ describe('Overview', () => {
     }
   })
 
+  it('includes every supplied Pot and Total Saved, not just the first four previews', async () => {
+    const screen = await renderOverview()
+    const pots = screen.get('section[aria-labelledby="pots-heading"]')
+    expect(pots.text()).toContain('Total Saved$920')
+    expect(pots.findAll('li').map((pot) => pot.text())).toEqual([
+      'Savings$159',
+      'Concert Ticket$110',
+      'Gift$110',
+      'New Laptop$10',
+      'Holiday$531',
+    ])
+  })
+
+  it('names the keyboard-accessible preview and explains its scroll and unavailable detail action', async () => {
+    const screen = await renderOverview()
+    const pots = screen.get('section[aria-labelledby="pots-heading"]')
+    const preview = pots.get('[role="region"][aria-label="Savings pots"]')
+    expect(preview.attributes('tabindex')).toBe('0')
+    expect(screen.get(`#${preview.attributes('aria-describedby')}`).text()).toContain(
+      'Use arrow keys when focused, swipe, or scroll to reach all five pots.',
+    )
+    expect(preview.text()).not.toContain('Total Saved')
+    const details = pots.get('button')
+    expect(details.text()).toBe('See Details')
+    expect(details.attributes('disabled')).toBeDefined()
+    expect(screen.get(`#${details.attributes('aria-describedby')}`).text()).toBe(
+      'The Pots page is not available yet.',
+    )
+    expect(pots.find('a').exists()).toBe(false)
+  })
+
   it('shows the supplied balance summaries independently of recent transactions', async () => {
     const screen = await renderOverview()
     expect(screen.get('h1').text()).toBe('Overview')

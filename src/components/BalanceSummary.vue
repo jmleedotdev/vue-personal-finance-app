@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import demo from '@/data/demo.json'
+import { formatCurrency } from '@/utils/currency'
 
-const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 const summaries = [
   { label: 'Current Balance', value: demo.balance.current, primary: true },
   { label: 'Income', value: demo.balance.income, primary: false },
@@ -18,7 +18,7 @@ const summaries = [
       :class="summary.primary ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'"
     >
       <dt :class="summary.primary ? 'text-white' : 'text-gray-500'">{{ summary.label }}</dt>
-      <dd class="mt-3 text-preset-1">{{ currency.format(summary.value) }}</dd>
+      <dd class="mt-3 text-preset-1">{{ formatCurrency(summary.value) }}</dd>
     </div>
   </dl>
 </template>

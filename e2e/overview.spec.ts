@@ -68,7 +68,7 @@ for (const { width, height } of layouts.filter((layout) => layout.mode !== 'desk
     })
     const finalControl = page.getByRole('button', { name: 'End of content check' })
     // Tab into the final control rather than using a programmatic scroll into view.
-    await page.getByRole('link', { name: 'Overview', exact: true }).focus()
+    await page.getByRole('region', { name: 'Savings pots' }).focus()
     await page.keyboard.press('Tab')
     await expect(finalControl).toBeFocused()
     const focusedBox = await finalControl.boundingBox()
