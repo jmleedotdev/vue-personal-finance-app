@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import BaseButton from '../BaseButton.vue'
 
 describe('BaseButton', () => {
-  it.each(['primary', 'secondary', 'tertiary', 'destroy'] as const)(
+  it.each(['primary', 'secondary', 'tertiary', 'destroy', 'pagination'] as const)(
     '%s buttons cannot activate while disabled and can activate when re-enabled',
     async (variant) => {
       const wrapper = mount(BaseButton, {

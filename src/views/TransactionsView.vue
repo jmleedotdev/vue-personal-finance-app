@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import TransactionPagination from '@/components/TransactionPagination.vue'
 import demo from '@/data/demo.json'
 import { formatCurrency } from '@/utils/currency'
 import { formatCalendarDate } from '@/utils/formatting'
@@ -15,7 +18,42 @@ const transactions = demo.transactions
     calendarDate: transaction.date.slice(0, 10),
   }))
   .sort((a, b) => b.calendarDate.localeCompare(a.calendarDate))
-  .slice(0, 10)
+
+const route = useRoute()
+const router = useRouter()
+const pageSize = 10
+const pageCount = Math.max(1, Math.ceil(transactions.length / pageSize))
+const page = computed(() => {
+  const value = route.query.page
+  const requested = typeof value === 'string' && /^[1-9]\d*$/.test(value) ? Number(value) : 1
+  return Math.min(requested, pageCount)
+})
+watch(
+  () => route.query.page,
+  (value) => {
+    const normalized = page.value === 1 ? undefined : String(page.value)
+    if (value !== normalized) {
+      void router.replace({ query: { ...route.query, page: normalized } })
+    }
+  },
+  { immediate: true },
+)
+const visibleTransactions = computed(() =>
+  transactions.slice((page.value - 1) * pageSize, page.value * pageSize),
+)
+
+const heading = useTemplateRef<HTMLHeadingElement>('heading')
+
+async function changePage(nextPage: number) {
+  if (nextPage === page.value) return
+  const failure = await router.push({
+    query: { ...route.query, page: nextPage === 1 ? undefined : String(nextPage) },
+  })
+  if (failure) return
+  await nextTick()
+  heading.value?.focus({ preventScroll: true })
+  heading.value?.scrollIntoView?.({ block: 'start' })
+}
 </script>
 
 <template>
@@ -24,9 +62,18 @@ const transactions = demo.transactions
     tabindex="-1"
     class="mx-auto flex w-full max-w-[1520px] min-w-0 flex-col gap-8 px-4 pt-6 pb-[calc(84px+env(safe-area-inset-bottom))] md:px-10 md:pt-8 md:pb-[calc(109px+env(safe-area-inset-bottom))] xl:pb-8"
   >
-    <h1 class="text-preset-1 md:flex md:h-14 md:items-center">Transactions</h1>
+    <h1
+      ref="heading"
+      tabindex="-1"
+      class="scroll-mt-6 text-preset-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green md:flex md:h-14 md:scroll-mt-8 md:items-center"
+    >
+      Transactions
+    </h1>
     <section aria-label="Transaction history" class="min-w-0 rounded-xl bg-white px-5 py-6 md:p-8">
-      <table class="w-full table-fixed border-collapse">
+      <p v-if="transactions.length === 0" class="py-6 text-center text-gray-500">
+        No transactions found
+      </p>
+      <table v-else class="w-full table-fixed border-collapse">
         <caption class="sr-only">
           Latest transactions, ordered by UTC calendar date
         </caption>
@@ -42,7 +89,7 @@ const transactions = demo.transactions
         </thead>
         <tbody>
           <tr
-            v-for="transaction in transactions"
+            v-for="transaction in visibleTransactions"
             :key="transaction.index"
             class="transaction-row border-b border-gray-100 last:border-0"
           >
@@ -77,6 +124,7 @@ const transactions = demo.transactions
           </tr>
         </tbody>
       </table>
+      <TransactionPagination :page="page" :page-count="pageCount" @change="changePage" />
     </section>
   </main>
 </template>

@@ -2,7 +2,7 @@
 
 A client-rendered Vue 3 / TypeScript demo with a responsive Overview, local Public Sans typography, Tailwind theme tokens, and accessible shared controls.
 
-The Overview shows balance summaries, scrollable pots and recent transactions, an interactive budget chart, and calculated recurring-bill summaries. Navigation uses a desktop sidebar (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. The lazy-loaded Transactions page shows the latest ten demo records in responsive, read-only rows. Search, category/sort controls, and pagination are not implemented yet. Budgets, Pots, and Recurring Bills destination pages remain unavailable; there is no backend, authentication, or persistence.
+The Overview shows balance summaries, scrollable pots and recent transactions, an interactive budget chart, and calculated recurring-bill summaries. Navigation uses a desktop sidebar (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. The lazy-loaded Transactions page shows the full demo history in responsive, read-only rows, ten records per page. Pagination is URL-backed (`/transactions?page=2`), restores on refresh and browser Back/Forward, and uses compact mobile controls. Explicit page changes scroll to and focus the Transactions heading. Search and category/sort controls are not implemented yet. Budgets, Pots, and Recurring Bills destination pages remain unavailable; there is no backend, authentication, or persistence.
 
 ## Development
 
@@ -51,4 +51,4 @@ Playwright checks reference, intermediate, and narrow widths for responsive navi
 - `src/assets/main.css`: theme tokens, typography, and local font setup.
 - `src/assets/`: bundled local logos, icons, fonts (license retained), and avatars.
 
-Implemented routes are `/` (Overview) and `/transactions` (latest-ten Transactions slice). Private design references remain in a Git-ignored local file, never in production code or tracked documentation.
+Implemented routes are `/` (Overview) and `/transactions` (paginated full transaction history). Private design references remain in a Git-ignored local file, never in production code or tracked documentation.
