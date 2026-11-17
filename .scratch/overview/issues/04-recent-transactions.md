@@ -19,3 +19,9 @@
 - [ ] Keep private design URLs out of tracked content.
 
 **Scope boundary:** Do not build the Transactions destination page, filtering, searching, pagination, editing, or persistence.
+
+## Comments
+
+### Owner revision: scrollable ten-entry preview
+
+The owner requested that the Transactions list be scrollable and contain ten transactions. This supersedes the five-entry limit above and in the parent spec. Preserve the first ten records in supplied dataset order, keeping the original five first. Keep the card header outside a keyboard-focusable, named vertical scroll region with approximately five rows visible at a time. Resolve local avatars and format signed amounts and calendar dates for all ten entries; verify scrolling to the tenth entry in a real browser.
