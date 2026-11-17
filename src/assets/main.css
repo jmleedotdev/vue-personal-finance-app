@@ -1,1 +1,59 @@
 @import 'tailwindcss';
+
+@font-face {
+  font-family: 'Public Sans';
+  src: url('./fonts/PublicSans/PublicSans-VariableFont_wght.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Public Sans';
+  src: url('./fonts/PublicSans/PublicSans-Italic-VariableFont_wght.ttf') format('truetype');
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Public Sans', sans-serif;
+
+  --color-gray-*: initial;
+  --color-gray-100: #f2f2f2;
+  --color-gray-300: #b3b3b3;
+  --color-gray-500: #696868;
+  --color-gray-900: #201f24;
+  --color-beige-100: #f8f4f0;
+  --color-beige-500: #98908b;
+  --color-white: #ffffff;
+  --color-green: #277c78;
+  --color-yellow: #f2cdac;
+  --color-cyan: #82c9d7;
+  --color-navy: #626070;
+  --color-red: #c94736;
+  --color-red-hover: color-mix(in srgb, var(--color-red) 80%, var(--color-white));
+  --color-purple: #826cb0;
+
+  --text-preset-1: 2rem;
+  --text-preset-1--line-height: 1.2;
+  --text-preset-1--font-weight: 700;
+  --text-preset-2: 1.25rem;
+  --text-preset-2--line-height: 1.2;
+  --text-preset-2--font-weight: 700;
+  --text-preset-3: 1rem;
+  --text-preset-3--line-height: 1.5;
+  --text-preset-3--font-weight: 700;
+  --text-preset-4: 0.875rem;
+  --text-preset-4--line-height: 1.5;
+  --text-preset-4--font-weight: 400;
+  --text-preset-5: 0.75rem;
+  --text-preset-5--line-height: 1.5;
+  --text-preset-5--font-weight: 400;
+}
+
+@layer base {
+  body {
+    @apply bg-beige-100 font-sans text-preset-4 text-gray-900;
+  }
+}
