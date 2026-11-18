@@ -6,7 +6,7 @@ import { budgetThemes } from '@/utils/budgetThemes'
 export const budgetReportingPeriod = 'August 2024'
 
 export const useBudgetsStore = defineStore('budgets', () => {
-  const budgets = ref(demo.budgets.map((budget, index) => ({ ...budget, id: `budget-${index}` })))
+  const budgets = ref(demo.budgets.map((budget) => ({ ...budget })))
   function categoryOptions(editingId?: string) {
     return [...new Set(demo.transactions.map((transaction) => transaction.category))]
       .sort((a, b) => a.localeCompare(b))
@@ -41,7 +41,7 @@ export const useBudgetsStore = defineStore('budgets', () => {
       cents <= 0
     )
       return false
-    budgets.value.push({ ...budget, id: `budget-${budgets.value.length}` })
+    budgets.value.push({ ...budget, id: crypto.randomUUID() })
     return true
   }
   function updateBudget(id: string, input: BudgetInput) {

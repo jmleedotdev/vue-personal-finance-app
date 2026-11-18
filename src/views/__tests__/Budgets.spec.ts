@@ -26,6 +26,20 @@ async function renderApp(path = '/budgets') {
 }
 
 describe('Budgets', () => {
+  it('retains explicit demo Budget identity rather than deriving it from array position', async () => {
+    demo.budgets[0]!.id = 'budget-stable-identity'
+    const { screen } = await renderApp()
+    expect(screen.get('article h2').attributes('id')).toBe('budget-stable-identity-heading')
+    await screen.get('button[aria-label="Manage Entertainment budget"]').trigger('click')
+    await screen.get('[role="menuitem"]').trigger('click')
+    await flushPromises()
+    const dialog = screen.get('[role="dialog"]')
+    await dialog.get('input').setValue('60')
+    await dialog.get('form').trigger('submit')
+    expect(screen.get('article h2').attributes('id')).toBe('budget-stable-identity-heading')
+    expect(demo.budgets[0]!.maximum).toBe(50)
+  })
+
   it('opens Edit from a named card menu, preloads saved values, and saves unchanged values', async () => {
     const { screen } = await renderApp()
     const trigger = screen.get('button[aria-label="Manage Entertainment budget"]')
@@ -307,6 +321,7 @@ describe('Budgets', () => {
           ...originalTransactions.filter((transaction) => transaction.category === 'Bills'),
         )
         demo.budgets.splice(0, demo.budgets.length, {
+          id: 'budget-bills',
           category: 'Bills',
           maximum: 10,
           theme: '#277C78',
@@ -332,7 +347,12 @@ describe('Budgets', () => {
         demo.budgets.splice(
           0,
           demo.budgets.length,
-          ...colors.map((theme, index) => ({ category: `Category ${index}`, maximum: 10, theme })),
+          ...colors.map((theme, index) => ({
+            id: `budget-${index}`,
+            category: `Category ${index}`,
+            maximum: 10,
+            theme,
+          })),
         )
         demo.transactions.splice(
           0,
@@ -402,8 +422,8 @@ describe('Budgets', () => {
     demo.budgets.splice(
       0,
       demo.budgets.length,
-      { category: 'Travel', maximum: 20, theme: '#277C78' },
-      { category: 'Fitness', maximum: 30, theme: '#82C9D7' },
+      { id: 'budget-travel', category: 'Travel', maximum: 20, theme: '#277C78' },
+      { id: 'budget-fitness', category: 'Fitness', maximum: 30, theme: '#82C9D7' },
     )
     demo.transactions.splice(0, demo.transactions.length, {
       ...originalTransactions[0]!,
@@ -439,6 +459,7 @@ describe('Budgets', () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       vi.setSystemTime(new Date(today))
       demo.budgets.splice(0, demo.budgets.length, {
+        id: 'budget-bills',
         category: 'Bills',
         maximum: 0.3,
         theme: '#277C78',
@@ -480,6 +501,7 @@ describe('Budgets', () => {
 
   it('previews the newest three outgoing transactions across months with supplied-order calendar-date ties, and drills down with category only', async () => {
     demo.budgets.splice(0, demo.budgets.length, {
+      id: 'budget-dining',
       category: 'Dining Out',
       maximum: 10,
       theme: '#277C78',
@@ -537,6 +559,7 @@ describe('Budgets', () => {
 
   it('shows full Remaining and a working drill-down for incoming-only categories', async () => {
     demo.budgets.splice(0, demo.budgets.length, {
+      id: 'budget-income',
       category: 'Income',
       maximum: 25,
       theme: '#277C78',

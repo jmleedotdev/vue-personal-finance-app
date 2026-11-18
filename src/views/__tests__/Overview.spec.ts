@@ -167,8 +167,8 @@ describe('Overview', () => {
 
   it('keeps extra budget categories reachable in a named keyboard-accessible legend', async () => {
     demo.budgets.push(
-      { category: 'Travel', maximum: 50, theme: '#277C78' },
-      { category: 'Fitness', maximum: 60, theme: '#82C9D7' },
+      { id: 'budget-travel', category: 'Travel', maximum: 50, theme: '#277C78' },
+      { id: 'budget-fitness', category: 'Fitness', maximum: 60, theme: '#82C9D7' },
     )
     const screen = await renderOverview()
     const budgets = screen.get('section[aria-labelledby="budgets-heading"]')
