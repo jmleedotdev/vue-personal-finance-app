@@ -5,8 +5,8 @@ import IconEllipsis from '@/components/icons/IconEllipsis.vue'
 import type { Pot } from '@/stores/pots'
 import { formatCurrency } from '@/utils/currency'
 
-const { pot } = defineProps<{ pot: Pot }>()
-const emit = defineEmits<{ edit: [id: string] }>()
+const { pot } = defineProps<{ pot: Pot; canAddMoney: boolean }>()
+const emit = defineEmits<{ edit: [id: string]; addMoney: [id: string] }>()
 const menuOpen = ref(false)
 const menuRoot = useTemplateRef('menuRoot')
 const trigger = useTemplateRef('trigger')
@@ -119,7 +119,9 @@ const percentageText = computed(() => `${Number(percentage.value.toFixed(2))}%`)
       </div>
     </div>
     <div class="grid grid-cols-2 gap-4">
-      <BaseButton variant="secondary" disabled>+ Add Money</BaseButton>
+      <BaseButton variant="secondary" :disabled="!canAddMoney" @click="emit('addMoney', pot.id)"
+        >+ Add Money</BaseButton
+      >
       <BaseButton variant="secondary" disabled>Withdraw</BaseButton>
     </div>
   </article>

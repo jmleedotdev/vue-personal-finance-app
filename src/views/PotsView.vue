@@ -5,11 +5,14 @@ import BaseButton from '@/components/BaseButton.vue'
 import PotCard from '@/components/PotCard.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import PotForm from '@/components/PotForm.vue'
+import PotTransferForm from '@/components/PotTransferForm.vue'
 import { usePotsStore, type PotInput } from '@/stores/pots'
 
 const store = usePotsStore()
 const { pots, themeOptions, canAddPot } = storeToRefs(store)
 const adding = ref(false)
+const fundingId = ref<string | null>(null)
+const fundingPot = computed(() => pots.value.find((pot) => pot.id === fundingId.value))
 const editingId = ref<string | null>(null)
 const editingPot = computed(() => pots.value.find((pot) => pot.id === editingId.value))
 const editNames = computed(() =>
@@ -38,8 +41,29 @@ function addPot(input: PotInput) {
       >
     </header>
     <div class="grid min-w-0 gap-6 xl:grid-cols-2">
-      <PotCard v-for="pot in pots" :key="pot.id" :pot="pot" @edit="editingId = $event" />
+      <PotCard
+        v-for="pot in pots"
+        :key="pot.id"
+        :pot="pot"
+        :can-add-money="store.currentBalance > 0"
+        @edit="editingId = $event"
+        @add-money="fundingId = $event"
+      />
     </div>
+    <BaseModal
+      v-if="fundingPot"
+      :heading="`Add to ‘${fundingPot.name}’`"
+      description="Reserve money from your Current Balance to save toward your goal. You can add beyond your target."
+      :return-focus="() => heading"
+      @close="fundingId = null"
+    >
+      <PotTransferForm
+        :pot="fundingPot"
+        :preview="(input) => store.previewAddition(fundingPot!.id, input)"
+        :confirm="(input) => store.addMoney(fundingPot!.id, input)"
+        @complete="fundingId = null"
+      />
+    </BaseModal>
     <BaseModal
       v-if="adding"
       heading="Add New Pot"

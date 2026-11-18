@@ -37,7 +37,9 @@ for (const { width, height } of [
     await expect(page.getByRole('button', { name: 'Add New Pot', exact: true })).toBeEnabled()
     for (const button of await page.locator('article button[aria-haspopup="menu"]').all())
       await expect(button).toBeEnabled()
-    for (const button of await page.locator('article button:not([aria-haspopup])').all())
+    for (const button of await page.getByRole('button', { name: '+ Add Money', exact: true }).all())
+      await expect(button).toBeEnabled()
+    for (const button of await page.getByRole('button', { name: 'Withdraw', exact: true }).all())
       await expect(button).toBeDisabled()
     const cards = await page.locator('article').evaluateAll((articles) =>
       articles.map((article) => {

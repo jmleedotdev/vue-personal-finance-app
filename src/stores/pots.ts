@@ -46,8 +46,46 @@ export const usePotsStore = defineStore('pots', () => {
     Object.assign(pot, { name: input.name.trim(), target: input.target, theme: input.theme })
     return true
   }
+  // Preview and confirmation share validation, but confirmation always reads live state.
+  function previewAddition(id: string, input: string) {
+    const pot = pots.value.find((pot) => pot.id === id)
+    const amount = parsePositiveUsd(input)
+    if (!pot || amount === null)
+      return { error: 'Enter an amount above $0 with up to 2 decimal places.' }
+    if (amount > currentBalance.value)
+      return { error: `Enter an amount within your available Current Balance.` }
+    const savedCents = Math.round(pot.total * 100)
+    const balanceCents = Math.round(currentBalance.value * 100)
+    const amountCents = Math.round(amount * 100)
+    const totalCents = savedCents + amountCents
+    const remainingCents = balanceCents - amountCents
+    const total = totalCents / 100
+    const balance = remainingCents / 100
+    if (
+      !Number.isSafeInteger(savedCents) ||
+      savedCents < 0 ||
+      !Number.isSafeInteger(balanceCents) ||
+      balanceCents < 0 ||
+      !Number.isSafeInteger(totalCents) ||
+      parsePositiveUsd(String(total)) !== total ||
+      (balance !== 0 && parsePositiveUsd(String(balance)) !== balance)
+    )
+      return { error: 'This addition would exceed the supported safe monetary values.' }
+    return { error: '', total, balance }
+  }
+  function addMoney(id: string, input: string) {
+    const result = previewAddition(id, input)
+    const pot = pots.value.find((pot) => pot.id === id)
+    if (!pot || result.total === undefined || result.balance === undefined) return false
+    // Synchronous validation and mutation: neither side changes on a rejected transfer.
+    pot.total = result.total
+    currentBalance.value = result.balance
+    return true
+  }
   return {
     pots,
+    previewAddition,
+    addMoney,
     currentBalance,
     totalSaved,
     themeOptions,
