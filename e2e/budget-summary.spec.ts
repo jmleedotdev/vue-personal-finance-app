@@ -63,9 +63,8 @@ for (const width of [1440, 768, 375, 320, 600, 900, 1280]) {
     const legend = card.getByRole('list', { name: 'Budget categories' })
     await expect(chart).toBeVisible()
     await expect(legend.getByRole('listitem')).toHaveCount(4)
-    const details = card.getByRole('button', { name: 'See Details' })
-    await expect(details).toBeDisabled()
-    await expect(details).toHaveAccessibleDescription('The Budgets page is not available yet.')
+    const details = card.getByRole('link', { name: 'See Details' })
+    await expect(details).toHaveAttribute('href', '/budgets')
 
     await expect
       .poll(async () => {

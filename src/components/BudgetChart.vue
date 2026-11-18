@@ -90,7 +90,14 @@ const definition = computed(() =>
 
 <template>
   <div class="relative mx-auto aspect-square w-full max-w-60 min-w-0">
+    <div
+      v-if="!categories.length"
+      role="img"
+      :aria-label="chartLabel"
+      class="absolute inset-0 rounded-full border-[39px] border-gray-100"
+    />
     <Chart
+      v-else
       :definition="definition"
       :aria-label="chartLabel"
       :aspect-ratio="1"

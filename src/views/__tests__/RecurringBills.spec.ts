@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { createPinia } from 'pinia'
 import App from '@/App.vue'
 import { routes } from '@/router'
 import demo from '@/data/demo.json'
@@ -16,7 +17,7 @@ afterEach(() => {
 async function renderApp(path = '/recurring-bills') {
   const router = createRouter({ history: createMemoryHistory(), routes })
   await router.push(path)
-  const screen = mount(App, { attachTo: document.body, global: { plugins: [router] } })
+  const screen = mount(App, { attachTo: document.body, global: { plugins: [createPinia(), router] } })
   screens.push(screen)
   await flushPromises()
   return { screen, router }
@@ -579,7 +580,7 @@ describe('Recurring Bills', () => {
       expect(screen.get('a[href="#main-content"]').text()).toBe('Skip to content')
       expect(
         screen.findAll('nav button[disabled]').map((button) => button.attributes('aria-label')),
-      ).toEqual(['Budgets', 'Pots'])
+      ).toEqual(['Pots'])
       await screen.get('nav a[aria-label="Overview"]').trigger('click')
       await flushPromises()
       expect(screen.get('h1').text()).toBe('Overview')

@@ -18,7 +18,7 @@ const route = useRoute()
 const views = [
   { label: 'Overview', icon: IconOverview, to: '/', routeName: 'overview' },
   { label: 'Transactions', icon: IconTransactions, to: '/transactions', routeName: 'transactions' },
-  { label: 'Budgets', icon: IconBudgets, to: undefined },
+  { label: 'Budgets', icon: IconBudgets, to: '/budgets', routeName: 'budgets' },
   { label: 'Pots', icon: IconPots, to: undefined },
   {
     label: 'Recurring Bills',

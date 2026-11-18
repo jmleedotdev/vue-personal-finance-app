@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { createPinia } from 'pinia'
 import App from '@/App.vue'
 import { routes } from '@/router'
 import demo from '@/data/demo.json'
@@ -21,7 +22,7 @@ async function renderOverview() {
     routes,
   })
   await router.push('/')
-  const screen = mount(App, { global: { plugins: [router] } })
+  const screen = mount(App, { global: { plugins: [createPinia(), router] } })
   screens.push(screen)
   await flushPromises()
   return screen
@@ -143,7 +144,7 @@ describe('Overview', () => {
     expect(details.attributes('href')).toBe('/recurring-bills')
   })
 
-  it('shows August 2024 budget spending, category limits, and an unavailable detail action', async () => {
+  it('shows August 2024 budget spending, category limits, and a Budgets detail link', async () => {
     const screen = await renderOverview()
     const budgets = screen.get('section[aria-labelledby="budgets-heading"]')
     expect(budgets.get('h2').text()).toBe('Budgets')
@@ -159,13 +160,9 @@ describe('Overview', () => {
       ],
     )
     expect(budgets.get('ul[aria-label="Budget categories"]').attributes('tabindex')).toBeUndefined()
-    const details = budgets.get('button')
+    const details = budgets.get('a')
     expect(details.text()).toBe('See Details')
-    expect(details.attributes('disabled')).toBeDefined()
-    expect(screen.get(`#${details.attributes('aria-describedby')}`).text()).toBe(
-      'The Budgets page is not available yet.',
-    )
-    expect(budgets.find('a').exists()).toBe(false)
+    expect(details.attributes('href')).toBe('/budgets')
   })
 
   it('keeps extra budget categories reachable in a named keyboard-accessible legend', async () => {
@@ -254,9 +251,10 @@ describe('Overview', () => {
     expect(navigation.findAll('a').map((link) => link.attributes('href'))).toEqual([
       '/',
       '/transactions',
+      '/budgets',
       '/recurring-bills',
     ])
-    for (const label of ['Budgets', 'Pots']) {
+    for (const label of ['Pots']) {
       const destination = navigation
         .findAll('button')
         .find((button) => button.attributes('aria-label') === label)!

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
+import { createPinia } from 'pinia'
 import App from '@/App.vue'
 import { routes } from '@/router'
 import demo from '@/data/demo.json'
@@ -16,7 +17,10 @@ async function renderApp(path = '/') {
   const router = createRouter({ history: createMemoryHistory(), routes })
   await router.push(path)
   await router.isReady()
-  const screen = mount(App, { attachTo: document.body, global: { plugins: [router] } })
+  const screen = mount(App, {
+    attachTo: document.body,
+    global: { plugins: [createPinia(), router] },
+  })
   screens.push(screen)
   await flushPromises()
   return { screen, router }
@@ -487,7 +491,11 @@ describe('Transactions', () => {
       expect(screen.get('h1').text()).toBe('Transactions')
       expect(screen.get('nav a[aria-current="page"]').attributes('aria-label')).toBe('Transactions')
       expect(screen.get('nav a[aria-label="Overview"]').attributes('aria-current')).toBeUndefined()
-      expect(screen.findAll('nav[aria-label="Main navigation"] button[disabled]')).toHaveLength(2)
+      expect(
+        screen
+          .findAll('nav[aria-label="Main navigation"] button[disabled]')
+          .map((button) => button.attributes('aria-label')),
+      ).toEqual(['Pots'])
       await screen.get('nav a[aria-label="Overview"]').trigger('click')
       await flushPromises()
       expect(screen.get('h1').text()).toBe('Overview')

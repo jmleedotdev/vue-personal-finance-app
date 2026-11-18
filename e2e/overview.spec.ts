@@ -25,7 +25,10 @@ for (const { width, height, mode } of layouts) {
       'href',
       '/transactions',
     )
-    await expect(navigation.getByRole('button', { name: 'Budgets' })).toBeDisabled()
+    await expect(navigation.getByRole('link', { name: 'Budgets' })).toHaveAttribute(
+      'href',
+      '/budgets',
+    )
     await expect(page.getByRole('button', { name: 'Minimize menu' })).toBeVisible({
       visible: mode === 'desktop',
     })
@@ -73,6 +76,12 @@ for (const { width, height } of layouts.filter((layout) => layout.mode !== 'desk
     const finalControl = page.getByRole('button', { name: 'End of content check' })
     // Tab into the final control rather than using a programmatic scroll into view.
     await page.getByRole('region', { name: 'Recent transactions' }).focus()
+    await page.keyboard.press('Tab')
+    await expect(
+      page
+        .getByRole('region', { name: 'Budgets', exact: true })
+        .getByRole('link', { name: 'See Details' }),
+    ).toBeFocused()
     await page.keyboard.press('Tab')
     await expect(
       page
