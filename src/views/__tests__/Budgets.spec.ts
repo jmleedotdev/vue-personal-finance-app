@@ -26,6 +26,55 @@ async function renderApp(path = '/budgets') {
 }
 
 describe('Budgets', () => {
+  it('confirms the intended Budget, removes only it, and retains its Transactions across routes', async () => {
+    const { screen, router } = await renderApp()
+    await screen.get('button[aria-label="Manage Dining Out budget"]').trigger('click')
+    expect(screen.findAll('[role="menuitem"]').map((item) => item.text())).toEqual([
+      'Edit Budget',
+      'Delete Budget',
+    ])
+    await screen.findAll('[role="menuitem"]')[1]!.trigger('click')
+    expect(screen.find('[role="menu"]').exists()).toBe(false)
+    const dialog = screen.get('[role="dialog"]')
+    expect(dialog.get('h2').text()).toBe('Delete ‘Dining Out’?')
+    expect(dialog.text()).toContain(
+      'Only the Budget will be removed. Your transactions will not be deleted.',
+    )
+    await dialog
+      .findAll('button')
+      .find((button) => button.text() === 'Yes, Confirm Deletion')!
+      .trigger('click')
+    expect(screen.find('[role="dialog"]').exists()).toBe(false)
+    expect(screen.findAll('article h2').map((heading) => heading.text())).toEqual([
+      'Entertainment',
+      'Bills',
+      'Personal Care',
+    ])
+    expect(screen.get('[role="img"]').attributes('aria-label')).toBe(
+      'August 2024 budget spending: $205 spent of $900 limit.',
+    )
+    expect(screen.get('[aria-label="Budget categories"]').text()).not.toContain('Dining Out')
+    await router.push('/')
+    await flushPromises()
+    expect(screen.get('[role="img"]').attributes('aria-label')).toBe(
+      'August 2024 budget spending: $205 spent of $900 limit.',
+    )
+    await router.push('/transactions?category=Dining+Out')
+    await flushPromises()
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Savory Bites Bistro',
+      'Ethan Clark',
+      'Ella Phillips',
+      'Yuna Kim',
+      'Flavor Fiesta',
+      'Ethan Clark',
+      'Ella Phillips',
+      'Yuna Kim',
+    ])
+    expect(demo.transactions).toEqual(originalTransactions)
+    expect(demo.budgets).toEqual(originalBudgets)
+  })
+
   it('retains explicit demo Budget identity rather than deriving it from array position', async () => {
     demo.budgets[0]!.id = 'budget-stable-identity'
     const { screen } = await renderApp()

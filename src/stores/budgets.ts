@@ -57,6 +57,9 @@ export const useBudgetsStore = defineStore('budgets', () => {
     Object.assign(budget, input)
     return true
   }
+  function deleteBudget(id: string) {
+    budgets.value = budgets.value.filter((budget) => budget.id !== id)
+  }
   const categories = computed(() =>
     budgets.value.map((budget) => {
       const outgoing = demo.transactions.filter(
@@ -96,6 +99,7 @@ export const useBudgetsStore = defineStore('budgets', () => {
     categoryOptions,
     budgetThemeOptions,
     updateBudget,
+    deleteBudget,
   }
 })
 

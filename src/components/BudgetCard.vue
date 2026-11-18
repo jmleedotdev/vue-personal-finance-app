@@ -8,16 +8,18 @@ import { formatCalendarDate } from '@/utils/formatting'
 import type { BudgetSpending } from '@/stores/budgets'
 
 const { budget } = defineProps<{ budget: BudgetSpending }>()
-const emit = defineEmits<{ edit: [id: string] }>()
+const emit = defineEmits<{ edit: [id: string]; delete: [id: string] }>()
 const menuOpen = ref(false)
 const menuRoot = useTemplateRef('menuRoot')
 const trigger = useTemplateRef('trigger')
 const editAction = useTemplateRef('editAction')
+const deleteAction = useTemplateRef('deleteAction')
 
-async function openMenu() {
+async function openMenu(focusLast = false) {
   menuOpen.value = true
   await nextTick()
-  editAction.value?.focus()
+  const action = focusLast ? deleteAction.value : editAction.value
+  action?.focus()
 }
 function closeMenu(restoreFocus = false) {
   menuOpen.value = false
@@ -30,7 +32,14 @@ function onMenuKeydown(event: KeyboardEvent) {
     closeMenu(true)
   } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
     event.preventDefault()
-    void openMenu()
+    if (!menuOpen.value) {
+      void openMenu(event.key === 'ArrowUp' || event.key === 'End')
+    } else {
+      const focusLast =
+        event.key === 'End' || (event.key !== 'Home' && document.activeElement === editAction.value)
+      const action = focusLast ? deleteAction.value : editAction.value
+      action?.focus()
+    }
   } else if (event.key === 'Tab') closeMenu()
 }
 function onOutsidePointer(event: PointerEvent) {
@@ -40,10 +49,11 @@ function onFocusout(event: FocusEvent) {
   if (!(event.relatedTarget instanceof Node && menuRoot.value?.contains(event.relatedTarget)))
     closeMenu()
 }
-async function editBudget() {
+async function requestAction(action: 'edit' | 'delete') {
   closeMenu(true)
   await nextTick()
-  emit('edit', budget.id)
+  if (action === 'edit') emit('edit', budget.id)
+  else emit('delete', budget.id)
 }
 onMounted(() => document.addEventListener('pointerdown', onOutsidePointer))
 onUnmounted(() => document.removeEventListener('pointerdown', onOutsidePointer))
@@ -88,16 +98,25 @@ const avatarAssets = import.meta.glob<string>('@/assets/images/avatars/*.jpg', {
           :id="`${budget.id}-menu`"
           role="menu"
           :aria-labelledby="`${budget.id}-menu-trigger`"
-          class="absolute top-full right-0 z-10 mt-2 w-max rounded-lg bg-white px-5 py-3 shadow-[0_4px_24px_0_#00000040]"
+          class="absolute top-full right-0 z-10 mt-2 flex w-max flex-col divide-y divide-gray-100 rounded-lg bg-white px-5 py-1 shadow-[0_4px_24px_0_#00000040]"
         >
           <button
             ref="editAction"
             type="button"
             role="menuitem"
-            class="rounded-sm py-1 text-preset-4 hover:text-gray-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
-            @click="editBudget"
+            class="rounded-sm py-3 text-left text-preset-4 hover:text-gray-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+            @click="requestAction('edit')"
           >
             Edit Budget
+          </button>
+          <button
+            ref="deleteAction"
+            type="button"
+            role="menuitem"
+            class="rounded-sm py-3 text-left text-preset-4 text-red hover:text-red-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+            @click="requestAction('delete')"
+          >
+            Delete Budget
           </button>
         </div>
       </div>

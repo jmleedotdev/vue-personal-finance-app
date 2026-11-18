@@ -96,7 +96,7 @@ onUnmounted(() => {
       opener?.isConnected && !opener.matches(':disabled') && !opener.closest('[inert]')
         ? opener
         : returnFocus?.()
-    target?.focus({ preventScroll: true })
+    target?.focus({ preventScroll: target === opener })
   })
 })
 </script>

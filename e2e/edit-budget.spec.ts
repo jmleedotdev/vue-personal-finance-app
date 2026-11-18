@@ -16,8 +16,11 @@ test('card menu keyboard, dismissal, dialog isolation and saved/canceled focus r
   await page.keyboard.press('ArrowDown')
   const edit = page.getByRole('menuitem', { name: 'Edit Budget' })
   await expect(edit).toBeFocused()
-  for (const key of ['ArrowUp', 'End', 'Home', 'ArrowDown']) {
+  const remove = page.getByRole('menuitem', { name: 'Delete Budget' })
+  for (const key of ['ArrowUp', 'End', 'ArrowDown']) {
     await page.keyboard.press(key)
+    await expect(remove).toBeFocused()
+    await page.keyboard.press('Home')
     await expect(edit).toBeFocused()
   }
   await page.keyboard.press('Escape')

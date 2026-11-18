@@ -12,6 +12,19 @@ import { formatCurrency } from '@/utils/currency'
 const store = useBudgetsStore()
 const { categories, availableCategories, themeOptions, canAddBudget } = storeToRefs(store)
 const adding = ref(false)
+const addButton = useTemplateRef('addButton')
+const deletingId = ref<string | null>(null)
+const deletingBudget = computed(() =>
+  store.budgets.find((budget) => budget.id === deletingId.value),
+)
+function deleteBudget() {
+  if (!deletingId.value) return
+  store.deleteBudget(deletingId.value)
+  deletingId.value = null
+}
+function deletionReturnFocus() {
+  return canAddBudget.value ? (addButton.value?.$el as HTMLButtonElement) : heading.value
+}
 const heading = useTemplateRef('heading')
 const editingId = ref<string | null>(null)
 const editingBudget = computed(() => store.budgets.find((budget) => budget.id === editingId.value))
@@ -36,7 +49,11 @@ function addBudget(budget: BudgetInput) {
       <h1 ref="heading" tabindex="-1" class="text-preset-1 md:flex md:h-14 md:items-center">
         Budgets
       </h1>
-      <BaseButton aria-label="Add New Budget" :disabled="!canAddBudget" @click="adding = true"
+      <BaseButton
+        ref="addButton"
+        aria-label="Add New Budget"
+        :disabled="!canAddBudget"
+        @click="adding = true"
         >+ Add New Budget</BaseButton
       >
     </header>
@@ -77,6 +94,7 @@ function addBudget(budget: BudgetInput) {
           :key="budget.id"
           :budget="budget"
           @edit="editingId = $event"
+          @delete="deletingId = $event"
         />
       </div>
       <section
@@ -90,6 +108,18 @@ function addBudget(budget: BudgetInput) {
         </p>
       </section>
     </div>
+    <BaseModal
+      v-if="deletingBudget"
+      :heading="`Delete ‘${deletingBudget.category}’?`"
+      description="Are you sure you want to delete this budget? Only the Budget will be removed. Your transactions will not be deleted."
+      :return-focus="deletionReturnFocus"
+      @close="deletingId = null"
+    >
+      <BaseButton variant="destroy" @click="deleteBudget">Yes, Confirm Deletion</BaseButton>
+      <BaseButton variant="tertiary" class="min-h-8" @click="deletingId = null"
+        >No, Go Back</BaseButton
+      >
+    </BaseModal>
     <BaseModal
       v-if="adding"
       heading="Add New Budget"
