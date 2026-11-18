@@ -104,6 +104,31 @@ test('keyboard skip link focuses Budgets main content and category drill-down cl
   ).toBeVisible()
 })
 
+test('zero-budget fixtures render a neutral chart and coherent Overview without browser errors', async ({
+  page,
+}) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  // Replace the demo-data network boundary, as in the larger bill-history checks.
+  await page.route(/\.(?:js|json)(?:\?.*)?$/, async (route) => {
+    const response = await route.fetch()
+    const source = await response.text()
+    const body = source.includes('export const budgets =')
+      ? `${source}\nbudgets.splice(0, budgets.length);`
+      : source.replace(/\bbudgets:\[[^\]]*\]/, 'budgets:[]')
+    await route.fulfill({ response, body })
+  })
+  await page.goto('/budgets')
+  const label = 'August 2024 budget spending: $0 spent of $0 limit.'
+  await expect(page.getByRole('img', { name: label })).toBeVisible()
+  await expect(page.getByRole('img', { name: label }).locator('path')).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'No budgets yet' })).toBeVisible()
+  await expect(page.getByRole('article')).toHaveCount(0)
+  await page.getByRole('link', { name: 'Overview', exact: true }).click()
+  await expect(page.getByRole('img', { name: label })).toBeVisible()
+  expect(errors).toEqual([])
+})
+
 test('long category and payee content wraps at narrow widths', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 })
   await page.goto('/budgets')
