@@ -19,6 +19,9 @@ The calendar date as of which payment history and the reporting month's bill sum
 **Billing Day**:
 The day of the month established by a recurring bill's latest recorded payment. A shorter month uses its last day without changing the established billing day.
 
+**Total Bills**:
+The combined monthly amount of all distinct recurring bills for the reporting month, including both paid and unpaid bills.
+
 **Paid Bills**:
 The total amount for recurring bills with a recorded payment in the reporting month on or before the reporting date, counting each bill once.
 
