@@ -1,0 +1,12 @@
+#!/bin/sh
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+cd "$root"
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "pre-commit: pnpm is required on PATH (with the Node.js version in package.json). Run pnpm check manually after fixing PATH." >&2
+  exit 1
+fi
+
+exec pnpm check
