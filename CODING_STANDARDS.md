@@ -1,6 +1,20 @@
 # Coding standards
 
-These design-system conventions apply to every UI implementation and review. Reviewers check the changed UI against them; feature-specific specs define behavior and approved visual deviations. Reference access and privacy workflow: `.agent-docs/design-system.md`.
+These standards apply to implementation and review. The design-system conventions apply to every UI change. Reviewers check the changed UI against them; feature-specific specs define behavior and approved visual deviations. Reference access and privacy workflow: `.agent-docs/design-system.md`.
+
+## Commit messages
+
+- Use `feat: <summary>` for commits that add or change application functionality.
+- Use `docs: <summary>` for documentation-only commits, including specs, tickets, and validation or review records.
+- Keep the summary concise and imperative, describing the change rather than the work process.
+- Choose the prefix based on the commit's primary purpose; a feature commit may also include supporting tests and documentation.
+
+Examples:
+
+```text
+feat: add submitted payee search to recurring bills
+docs: record bill sorting validation and review completion
+```
 
 ## Reuse the design-system foundations
 
