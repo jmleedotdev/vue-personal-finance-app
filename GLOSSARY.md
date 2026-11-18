@@ -20,7 +20,16 @@ The unspent portion of a budget's Maximum Spend, or zero when spending meets or 
 The most recent outgoing transactions in a budget's category, regardless of reporting month.
 
 **Pot**:
-A named savings goal with a target amount and an amount currently saved.
+A uniquely named savings goal holding money reserved from Current Balance. Its target amount is a goal, not a limit on the amount saved.
+
+**Current Balance**:
+Money available outside pots. Transfers into or out of pots change Current Balance without constituting income or expenses.
+
+**Add Money**:
+A transfer from Current Balance into a pot, limited by the available Current Balance.
+
+**Withdraw**:
+A transfer from a pot back to Current Balance, limited by the amount saved in that pot.
 
 **Total Saved**:
 The sum of the amounts currently saved across all pots, including pots outside the visible portion of a list.
