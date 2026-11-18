@@ -116,7 +116,11 @@ test('desktop menu supports keyboard collapse, restore, and refresh reset with l
   expect(
     await page
       .locator('img')
-      .evaluateAll((images) => images.every((image) => image.complete && image.naturalWidth > 0)),
+      .evaluateAll((images) =>
+        images.every(
+          (image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
+        ),
+      ),
   ).toBe(true)
   expect(await page.evaluate(() => document.fonts.check('14px "Public Sans"'))).toBe(true)
   await page.keyboard.press('Space')

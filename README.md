@@ -26,7 +26,10 @@ pnpm test:fast
 pnpm test:unit --run
 # Focused rendered Overview behavior
 pnpm test:unit --run src/views/__tests__/Overview.spec.ts
+# Type-check app, configuration, fast tests, and E2E tests; no browser/server required
 pnpm type-check
+# Standalone E2E type-check
+pnpm exec tsc --project e2e/tsconfig.json
 # Type-check and compile production assets
 pnpm build
 # Lint (applies fixes)

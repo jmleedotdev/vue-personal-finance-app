@@ -52,6 +52,7 @@ for (const width of [1440, 768, 375, 320, 600, 900, 1280]) {
       true,
     )
     const spacing = await page.locator('table').evaluate((table) => {
+      if (!(table instanceof HTMLTableElement)) throw new Error('Expected a table element')
       const body = table.tBodies[0]!
       const first = body.rows[0]!
       const last = body.rows[body.rows.length - 1]!
