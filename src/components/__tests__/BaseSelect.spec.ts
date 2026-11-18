@@ -10,6 +10,31 @@ const options = [
 ]
 
 describe('BaseSelect', () => {
+  it('moves away from a newly disabled active option and disables a fully unavailable selector', async () => {
+    const wrapper = mount(BaseSelect, { props: { label: 'Category', options, modelValue: 'all' } })
+    try {
+      const combobox = wrapper.get('[role="combobox"]')
+      await combobox.trigger('keydown', { key: 'End' })
+      await wrapper.setProps({
+        options: options.map((option) => ({ ...option, disabled: option.value === 'bills' })),
+      })
+      expect(wrapper.get(`[id="${combobox.attributes('aria-activedescendant')}"]`).text()).toBe(
+        'All Transactions',
+      )
+      await combobox.trigger('keydown', { key: 'End' })
+      expect(wrapper.get(`[id="${combobox.attributes('aria-activedescendant')}"]`).text()).toBe(
+        'Entertainment',
+      )
+      await wrapper.setProps({ options: options.map((option) => ({ ...option, disabled: true })) })
+      expect(combobox.attributes('disabled')).toBeDefined()
+      expect(combobox.attributes('aria-expanded')).toBe('false')
+      expect(wrapper.find('[role="listbox"]').exists()).toBe(false)
+      expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
   it('treats spaces inside a typed label as search text, not selection', async () => {
     const wrapper = mount(BaseSelect, {
       props: {

@@ -15,7 +15,13 @@ const {
   active = false,
 } = defineProps<{
   label: string
-  options: readonly { value: string; label: string }[]
+  options: readonly {
+    value: string
+    label: string
+    swatch?: string
+    disabled?: boolean
+    disabledText?: string
+  }[]
   placeholder?: string
   disabled?: boolean
   help?: string
@@ -35,9 +41,27 @@ const open = ref(false)
 const trigger = useTemplateRef('trigger')
 const root = useTemplateRef('root')
 const activeIndex = ref(-1)
+const popupStyle = ref<Record<string, string>>({})
+
+function positionPopup() {
+  if (!root.value?.closest('[role="dialog"]') || !trigger.value) return
+  const bounds = trigger.value.getBoundingClientRect()
+  const below = window.innerHeight - bounds.bottom - 36
+  const above = bounds.top - 36
+  const upwards = below < Math.min(288, options.length * 46 + 24) && above > below
+  popupStyle.value = {
+    position: 'fixed',
+    left: `${bounds.left}px`,
+    width: `${bounds.width}px`,
+    top: upwards ? 'auto' : `${bounds.bottom + 16}px`,
+    bottom: upwards ? `${window.innerHeight - bounds.top + 16}px` : 'auto',
+    marginTop: '0',
+    maxHeight: `${Math.max(0, Math.min(288, upwards ? above : below))}px`,
+  }
+}
 let search = ''
 let lastTypedAt = 0
-const unavailable = computed(() => disabled || options.length === 0)
+const unavailable = computed(() => disabled || !options.some((option) => !option.disabled))
 const selected = computed(() => options.find((option) => option.value === model.value))
 const activeId = computed(() =>
   open.value && options[activeIndex.value] ? `${id}-option-${activeIndex.value}` : undefined,
@@ -45,11 +69,13 @@ const activeId = computed(() =>
 
 function show() {
   if (unavailable.value) return
-  activeIndex.value = Math.max(
-    0,
-    options.findIndex((option) => option.value === model.value),
+  const selectedIndex = options.findIndex(
+    (option) => option.value === model.value && !option.disabled,
   )
+  activeIndex.value =
+    selectedIndex >= 0 ? selectedIndex : options.findIndex((option) => !option.disabled)
   search = ''
+  positionPopup()
   open.value = true
 }
 
@@ -67,7 +93,16 @@ function findByLabel(character: string) {
   const start = prefix.length === 1 ? activeIndex.value + 1 : activeIndex.value
   for (let offset = 0; offset < options.length; offset++) {
     const index = (start + offset) % options.length
-    if (options[index]?.label.toLocaleLowerCase().startsWith(prefix)) {
+    if (!options[index]?.disabled && options[index]?.label.toLocaleLowerCase().startsWith(prefix)) {
+      activeIndex.value = index
+      return
+    }
+  }
+}
+
+function move(start: number, direction: number) {
+  for (let index = start; index >= 0 && index < options.length; index += direction) {
+    if (!options[index]?.disabled) {
       activeIndex.value = index
       return
     }
@@ -77,22 +112,24 @@ function findByLabel(character: string) {
 function onKeydown(event: KeyboardEvent) {
   if (unavailable.value) return
   if (event.key === 'Escape') {
-    if (open.value) event.preventDefault()
-    open.value = false
+    if (open.value) {
+      event.preventDefault()
+      event.stopPropagation()
+      open.value = false
+    }
   } else if (event.key === 'Tab') {
     if (open.value) select(activeIndex.value, false)
   } else if (event.key === 'Home' || event.key === 'End') {
     event.preventDefault()
     if (!open.value) show()
-    activeIndex.value = event.key === 'Home' ? 0 : options.length - 1
+    move(event.key === 'Home' ? 0 : options.length - 1, event.key === 'Home' ? 1 : -1)
   } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault()
     if (!open.value) show()
-    else
-      activeIndex.value = Math.max(
-        0,
-        Math.min(options.length - 1, activeIndex.value + (event.key === 'ArrowDown' ? 1 : -1)),
-      )
+    else {
+      const direction = event.key === 'ArrowDown' ? 1 : -1
+      move(activeIndex.value + direction, direction)
+    }
   } else if (event.key === ' ' && open.value && search && Date.now() - lastTypedAt <= 700) {
     event.preventDefault()
     findByLabel(' ')
@@ -121,17 +158,38 @@ function onFocusout(event: FocusEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('pointerdown', onOutsidePointer))
-onUnmounted(() => document.removeEventListener('pointerdown', onOutsidePointer))
+function onGeometryChange() {
+  if (open.value) positionPopup()
+}
+
+onMounted(() => {
+  document.addEventListener('pointerdown', onOutsidePointer)
+  document.addEventListener('scroll', onGeometryChange, true)
+  window.addEventListener('resize', onGeometryChange)
+})
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', onOutsidePointer)
+  document.removeEventListener('scroll', onGeometryChange, true)
+  window.removeEventListener('resize', onGeometryChange)
+})
 
 watch(
-  () => options.map((option) => option.value),
+  () => options.map((option) => ({ value: option.value, disabled: option.disabled })),
   (values, previous) => {
     if (!open.value) return
-    const previousValue = previous[activeIndex.value]
-    const retainedIndex = previousValue === undefined ? -1 : values.indexOf(previousValue)
+    const previousValue = previous[activeIndex.value]?.value
+    const retainedIndex = values.findIndex(
+      (option) => option.value === previousValue && !option.disabled,
+    )
+    const selectedIndex = values.findIndex(
+      (option) => option.value === model.value && !option.disabled,
+    )
     activeIndex.value =
-      retainedIndex >= 0 ? retainedIndex : Math.max(0, values.indexOf(model.value))
+      retainedIndex >= 0
+        ? retainedIndex
+        : selectedIndex >= 0
+          ? selectedIndex
+          : values.findIndex((option) => !option.disabled)
   },
 )
 
@@ -146,15 +204,19 @@ watch(activeId, async (optionId) => {
   const list = option?.parentElement
   if (!option || !list) return
   // Reveal the active option within the menu without scrolling the page.
-  if (option.offsetTop < list.scrollTop) list.scrollTop = option.offsetTop
-  else if (option.offsetTop + option.offsetHeight > list.scrollTop + list.clientHeight) {
-    list.scrollTop = option.offsetTop + option.offsetHeight - list.clientHeight
+  const optionBounds = option.getBoundingClientRect()
+  const listBounds = list.getBoundingClientRect()
+  if (optionBounds.top < listBounds.top)
+    list.scrollTop -= Math.ceil(listBounds.top - optionBounds.top)
+  else if (optionBounds.bottom > listBounds.bottom) {
+    list.scrollTop += Math.ceil(optionBounds.bottom - listBounds.bottom)
   }
 })
 
 function select(index: number, restoreFocus = true) {
   const option = options[index]
-  if (option && !unavailable.value && option.value !== model.value) model.value = option.value
+  if (option?.disabled || unavailable.value) return
+  if (option && option.value !== model.value) model.value = option.value
   open.value = false
   if (restoreFocus) trigger.value?.focus({ preventScroll: true })
 }
@@ -210,7 +272,13 @@ function select(index: number, restoreFocus = true) {
             selected ? '' : 'text-beige-500',
             inline ? 'sr-only whitespace-nowrap md:not-sr-only' : '',
           ]"
-          >{{ selected?.label ?? placeholder }}</span
+          class="flex min-w-0 items-center gap-3"
+          ><span
+            v-if="selected?.swatch"
+            aria-hidden="true"
+            class="size-4 shrink-0 rounded-full"
+            :style="{ backgroundColor: selected.swatch }"
+          />{{ selected?.label ?? placeholder }}</span
         >
         <span
           :class="inline ? 'hidden md:flex' : 'flex'"
@@ -222,8 +290,9 @@ function select(index: number, restoreFocus = true) {
         v-if="open"
         :id="`${id}-listbox`"
         role="listbox"
+        :style="popupStyle"
         :aria-labelledby="`${id}-label`"
-        class="absolute top-full z-10 mt-4 max-h-72 overflow-y-auto rounded-lg bg-white px-5 py-3 shadow-[0_4px_24px_0_#00000040]"
+        class="absolute top-full z-10 mt-4 max-h-[min(288px,40dvh)] overflow-y-auto overscroll-contain rounded-lg bg-white px-5 py-3 shadow-[0_4px_24px_0_#00000040]"
         :class="inline ? 'right-0 w-max max-w-[calc(100vw-4.5rem)] min-w-full' : 'w-full'"
       >
         <li
@@ -232,15 +301,29 @@ function select(index: number, restoreFocus = true) {
           :id="`${id}-option-${index}`"
           role="option"
           :aria-selected="option.value === model"
-          class="cursor-pointer border-b border-gray-100 py-3 text-preset-4 text-gray-900 last:border-0 hover:bg-beige-100"
+          :aria-disabled="!!option.disabled"
+          class="flex items-center gap-3 border-b border-gray-100 py-3 text-preset-4 last:border-0"
           :class="[
             option.value === model ? 'font-bold' : '',
             index === activeIndex ? 'bg-beige-100' : '',
+            option.disabled
+              ? 'cursor-not-allowed text-gray-500'
+              : 'cursor-pointer text-gray-900 hover:bg-beige-100',
           ]"
           @mousedown.prevent
           @click="select(index)"
         >
-          {{ option.label }}
+          <span
+            v-if="option.swatch"
+            aria-hidden="true"
+            class="size-4 shrink-0 rounded-full"
+            :class="option.disabled ? 'opacity-25' : ''"
+            :style="{ backgroundColor: option.swatch }"
+          />
+          <span class="min-w-0 flex-1">{{ option.label }}</span
+          ><span v-if="option.disabledText" class="shrink-0 text-preset-5 text-gray-500">{{
+            option.disabledText
+          }}</span>
         </li>
       </ul>
     </div>

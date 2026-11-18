@@ -38,8 +38,14 @@ const describedBy = computed(
         :aria-describedby="describedBy"
         :aria-invalid="error ? true : undefined"
         class="w-full min-w-0 rounded-lg border border-beige-500 bg-white px-5 py-[11px] text-preset-4 text-gray-900 placeholder:text-beige-500 focus:border-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900 enabled:not-focus:not-aria-invalid:hover:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:opacity-50 aria-invalid:border-red"
-        :class="$slots.trailing ? 'pr-14' : ''"
+        :class="[$slots.trailing ? 'pr-14' : '', $slots.leading ? 'pl-10' : '']"
       />
+      <div
+        v-if="$slots.leading"
+        class="pointer-events-none absolute inset-y-0 left-5 flex items-center"
+      >
+        <slot name="leading" />
+      </div>
       <div v-if="$slots.trailing" class="absolute inset-y-0 right-1 flex items-center">
         <slot name="trailing" />
       </div>

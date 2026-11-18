@@ -1,0 +1,17 @@
+export const budgetThemes = [
+  { label: 'Green', value: '#277C78', swatch: 'var(--color-green)' },
+  { label: 'Yellow', value: '#F2CDAC', swatch: 'var(--color-yellow)' },
+  { label: 'Cyan', value: '#82C9D7', swatch: 'var(--color-cyan)' },
+  { label: 'Navy', value: '#626070', swatch: 'var(--color-navy)' },
+  { label: 'Red', value: '#C94736', swatch: 'var(--color-red)' },
+  { label: 'Purple', value: '#826CB0', swatch: 'var(--color-purple)' },
+  { label: 'Turquoise', value: '#597C7C', swatch: 'var(--color-turquoise)' },
+  { label: 'Brown', value: '#93674F', swatch: 'var(--color-brown)' },
+  { label: 'Magenta', value: '#934F6F', swatch: 'var(--color-magenta)' },
+  { label: 'Blue', value: '#3F82B2', swatch: 'var(--color-blue)' },
+  { label: 'Grey', value: '#97A0AC', swatch: 'var(--color-navy-grey)' },
+  { label: 'Army', value: '#7F9161', swatch: 'var(--color-army-green)' },
+  { label: 'Pink', value: '#AF81BA', swatch: 'var(--color-pink)' },
+  { label: 'Gold', value: '#CAB361', swatch: 'var(--color-gold)' },
+  { label: 'Orange', value: '#BE6C49', swatch: 'var(--color-orange)' },
+] as const

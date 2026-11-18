@@ -1,11 +1,22 @@
 <script setup lang="ts">
+import { ref, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
+import BaseButton from '@/components/BaseButton.vue'
+import BaseModal from '@/components/BaseModal.vue'
+import BudgetForm from '@/components/BudgetForm.vue'
 import BudgetChart from '@/components/BudgetChart.vue'
 import BudgetCard from '@/components/BudgetCard.vue'
-import { useBudgetsStore, budgetReportingPeriod } from '@/stores/budgets'
+import { useBudgetsStore, budgetReportingPeriod, type BudgetInput } from '@/stores/budgets'
 import { formatCurrency } from '@/utils/currency'
 
-const { categories } = storeToRefs(useBudgetsStore())
+const store = useBudgetsStore()
+const { categories, availableCategories, themeOptions, addUnavailableReason } = storeToRefs(store)
+const adding = ref(false)
+const heading = useTemplateRef('heading')
+
+function addBudget(budget: BudgetInput) {
+  if (store.addBudget(budget)) adding.value = false
+}
 </script>
 
 <template>
@@ -14,7 +25,21 @@ const { categories } = storeToRefs(useBudgetsStore())
     tabindex="-1"
     class="mx-auto flex w-full max-w-[1520px] min-w-0 flex-col gap-8 px-4 pt-6 pb-[calc(84px+env(safe-area-inset-bottom))] md:px-10 md:pt-8 md:pb-[calc(109px+env(safe-area-inset-bottom))] xl:pb-8"
   >
-    <h1 class="text-preset-1 md:flex md:h-14 md:items-center">Budgets</h1>
+    <header class="flex items-center justify-between gap-4">
+      <h1 ref="heading" tabindex="-1" class="text-preset-1 md:flex md:h-14 md:items-center">
+        Budgets
+      </h1>
+      <BaseButton
+        aria-label="Add New Budget"
+        :disabled="!!addUnavailableReason"
+        :aria-describedby="addUnavailableReason ? 'add-budget-unavailable' : undefined"
+        @click="adding = true"
+        >+ Add New Budget</BaseButton
+      >
+    </header>
+    <p v-if="addUnavailableReason" id="add-budget-unavailable" class="text-gray-500">
+      {{ addUnavailableReason }}
+    </p>
     <div class="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
       <section
         aria-labelledby="spending-summary-heading"
@@ -60,5 +85,14 @@ const { categories } = storeToRefs(useBudgetsStore())
         </p>
       </section>
     </div>
+    <BaseModal
+      v-if="adding"
+      heading="Add New Budget"
+      description="Choose a category to set a spending budget. These categories can help you monitor spending."
+      :return-focus="() => heading"
+      @close="adding = false"
+    >
+      <BudgetForm :categories="availableCategories" :themes="themeOptions" @submit="addBudget" />
+    </BaseModal>
   </main>
 </template>
