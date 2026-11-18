@@ -487,7 +487,7 @@ describe('Transactions', () => {
       expect(screen.get('h1').text()).toBe('Transactions')
       expect(screen.get('nav a[aria-current="page"]').attributes('aria-label')).toBe('Transactions')
       expect(screen.get('nav a[aria-label="Overview"]').attributes('aria-current')).toBeUndefined()
-      expect(screen.findAll('nav[aria-label="Main navigation"] button[disabled]')).toHaveLength(3)
+      expect(screen.findAll('nav[aria-label="Main navigation"] button[disabled]')).toHaveLength(2)
       await screen.get('nav a[aria-label="Overview"]').trigger('click')
       await flushPromises()
       expect(screen.get('h1').text()).toBe('Overview')

@@ -60,7 +60,7 @@ for (const { width, height } of layouts.filter((layout) => layout.mode !== 'desk
   test(`bottom navigation clears final content and focus at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height })
     await page.goto('/')
-    // Exercise the shell with tall content before the later card tickets exist.
+    // Exercise final-content focus and clearance with additional tall content.
     await page.evaluate(() => {
       const main = document.querySelector('main')!
       const spacer = document.createElement('div')
@@ -73,6 +73,12 @@ for (const { width, height } of layouts.filter((layout) => layout.mode !== 'desk
     const finalControl = page.getByRole('button', { name: 'End of content check' })
     // Tab into the final control rather than using a programmatic scroll into view.
     await page.getByRole('region', { name: 'Recent transactions' }).focus()
+    await page.keyboard.press('Tab')
+    await expect(
+      page
+        .getByRole('region', { name: 'Recurring Bills', exact: true })
+        .getByRole('link', { name: 'See Details' }),
+    ).toBeFocused()
     await page.keyboard.press('Tab')
     await expect(finalControl).toBeFocused()
     const focusedBox = await finalControl.boundingBox()

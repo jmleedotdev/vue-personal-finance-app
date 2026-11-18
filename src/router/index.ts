@@ -2,6 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 
 export const routes = [
+  {
+    path: '/recurring-bills',
+    name: 'recurring-bills',
+    component: () => import('../views/RecurringBillsView.vue'),
+  },
   { path: '/', name: 'overview', component: HomeView },
   {
     path: '/transactions',

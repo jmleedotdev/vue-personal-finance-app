@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import BaseButton from '@/components/BaseButton.vue'
+import { RouterLink } from 'vue-router'
+import IconCaretRight from '@/components/icons/IconCaretRight.vue'
 import demo from '@/data/demo.json'
 import { formatCurrency } from '@/utils/currency'
-import { summarizeRecurringBills } from '@/utils/recurringBills'
+import { REPORTING_DATE, summarizeRecurringBills } from '@/utils/recurringBills'
 
-const reportingDate = '2024-08-19'
-const totals = summarizeRecurringBills(demo.transactions, reportingDate)
+const totals = summarizeRecurringBills(demo.transactions, REPORTING_DATE)
 const summaries = [
   { label: 'Paid Bills', amount: totals.paid, accent: 'border-green' },
   { label: 'Total Upcoming', amount: totals.upcoming, accent: 'border-yellow' },
@@ -20,18 +20,13 @@ const summaries = [
   >
     <header class="mb-8 flex items-center justify-between gap-4">
       <h2 id="recurring-bills-heading" class="text-preset-2">Recurring Bills</h2>
-      <BaseButton
-        variant="tertiary"
-        trailing-caret
-        disabled
-        aria-describedby="recurring-bills-unavailable"
-        class="shrink-0"
+      <RouterLink
+        to="/recurring-bills"
+        class="inline-flex shrink-0 items-center gap-3 rounded-lg text-preset-4 text-gray-500 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900"
       >
         See Details
-      </BaseButton>
-      <p id="recurring-bills-unavailable" class="sr-only">
-        The Recurring Bills page is not available yet.
-      </p>
+        <IconCaretRight />
+      </RouterLink>
     </header>
     <dl class="flex flex-col gap-3">
       <div

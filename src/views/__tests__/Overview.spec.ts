@@ -136,16 +136,11 @@ describe('Overview', () => {
     },
   )
 
-  it('explains that recurring-bill details are unavailable without an enabled link', async () => {
+  it('links recurring-bill details to the default page', async () => {
     const screen = await renderOverview()
-    const bills = screen.get('section[aria-labelledby="recurring-bills-heading"]')
-    const details = bills.get('button')
+    const details = screen.get('section[aria-labelledby="recurring-bills-heading"] a')
     expect(details.text()).toBe('See Details')
-    expect(details.attributes('disabled')).toBeDefined()
-    expect(screen.get(`#${details.attributes('aria-describedby')}`).text()).toBe(
-      'The Recurring Bills page is not available yet.',
-    )
-    expect(bills.find('a').exists()).toBe(false)
+    expect(details.attributes('href')).toBe('/recurring-bills')
   })
 
   it('shows August 2024 budget spending, category limits, and an unavailable detail action', async () => {
@@ -259,8 +254,9 @@ describe('Overview', () => {
     expect(navigation.findAll('a').map((link) => link.attributes('href'))).toEqual([
       '/',
       '/transactions',
+      '/recurring-bills',
     ])
-    for (const label of ['Budgets', 'Pots', 'Recurring Bills']) {
+    for (const label of ['Budgets', 'Pots']) {
       const destination = navigation
         .findAll('button')
         .find((button) => button.attributes('aria-label') === label)!

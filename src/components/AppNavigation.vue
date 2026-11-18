@@ -20,7 +20,12 @@ const views = [
   { label: 'Transactions', icon: IconTransactions, to: '/transactions', routeName: 'transactions' },
   { label: 'Budgets', icon: IconBudgets, to: undefined },
   { label: 'Pots', icon: IconPots, to: undefined },
-  { label: 'Recurring Bills', icon: IconRecurringBills, to: undefined },
+  {
+    label: 'Recurring Bills',
+    icon: IconRecurringBills,
+    to: '/recurring-bills',
+    routeName: 'recurring-bills',
+  },
 ]
 </script>
 
@@ -53,7 +58,7 @@ const views = [
             :aria-describedby="view.to ? undefined : 'navigation-unavailable'"
             class="flex w-full flex-col items-center gap-1 rounded-t-lg border-b-4 pt-2 pb-3 font-bold transition-colors duration-150 ease-in-out focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-green disabled:cursor-not-allowed motion-reduce:transition-none md:text-preset-5 md:font-bold xl:h-14 xl:flex-row xl:gap-4 xl:rounded-tl-none xl:rounded-r-xl xl:border-b-0 xl:border-l-4 xl:px-7 xl:py-4 xl:text-preset-3"
             :class="
-              view.routeName === route.name
+              view.to && view.routeName === route.name
                 ? 'border-green bg-beige-100 text-gray-900'
                 : view.to
                   ? 'border-transparent text-gray-300 hover:text-white'
@@ -63,7 +68,7 @@ const views = [
             <span class="flex size-6 shrink-0 items-center justify-center">
               <component
                 :is="view.icon"
-                :class="view.routeName === route.name ? 'text-green' : undefined"
+                :class="view.to && view.routeName === route.name ? 'text-green' : undefined"
               />
             </span>
             <span class="sr-only md:not-sr-only" :class="{ 'xl:sr-only': minimized }">{{
