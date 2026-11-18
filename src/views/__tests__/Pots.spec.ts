@@ -420,7 +420,7 @@ it('opens Pots from Overview and navigation with original ordered finances and a
     screen
       .findAll('article button')
       .filter((button) => button.text() === 'Withdraw')
-      .every((button) => button.attributes('disabled') !== undefined),
+      .every((button) => button.attributes('disabled') === undefined),
   ).toBe(true)
   await screen.get('nav a[aria-label="Overview"]').trigger('click')
   await flushPromises()

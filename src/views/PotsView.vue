@@ -6,13 +6,18 @@ import PotCard from '@/components/PotCard.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import PotForm from '@/components/PotForm.vue'
 import PotTransferForm from '@/components/PotTransferForm.vue'
-import { usePotsStore, type PotInput } from '@/stores/pots'
+import { usePotsStore, type PotInput, type PotTransferOperation } from '@/stores/pots'
 
 const store = usePotsStore()
 const { pots, themeOptions, canAddPot } = storeToRefs(store)
 const adding = ref(false)
-const fundingId = ref<string | null>(null)
-const fundingPot = computed(() => pots.value.find((pot) => pot.id === fundingId.value))
+const transferOperation = ref<PotTransferOperation>('add')
+const transferPotId = ref<string | null>(null)
+function openTransfer(id: string, operation: PotTransferOperation) {
+  transferOperation.value = operation
+  transferPotId.value = id
+}
+const transferPot = computed(() => pots.value.find((pot) => pot.id === transferPotId.value))
 const editingId = ref<string | null>(null)
 const editingPot = computed(() => pots.value.find((pot) => pot.id === editingId.value))
 const editNames = computed(() =>
@@ -47,21 +52,27 @@ function addPot(input: PotInput) {
         :pot="pot"
         :can-add-money="store.currentBalance > 0"
         @edit="editingId = $event"
-        @add-money="fundingId = $event"
+        @add-money="openTransfer($event, 'add')"
+        @withdraw="openTransfer($event, 'withdraw')"
       />
     </div>
     <BaseModal
-      v-if="fundingPot"
-      :heading="`Add to ‘${fundingPot.name}’`"
-      description="Reserve money from your Current Balance to save toward your goal. You can add beyond your target."
+      v-if="transferPot"
+      :heading="`${transferOperation === 'add' ? 'Add to' : 'Withdraw from'} ‘${transferPot.name}’`"
+      :description="
+        transferOperation === 'add'
+          ? 'Reserve money from your Current Balance to save toward your goal. You can add beyond your target.'
+          : 'Withdraw money from your pot into your Current Balance. You can withdraw up to the full saved amount without removing your goal.'
+      "
       :return-focus="() => heading"
-      @close="fundingId = null"
+      @close="transferPotId = null"
     >
       <PotTransferForm
-        :pot="fundingPot"
-        :preview="(input) => store.previewAddition(fundingPot!.id, input)"
-        :confirm="(input) => store.addMoney(fundingPot!.id, input)"
-        @complete="fundingId = null"
+        :pot="transferPot"
+        :operation="transferOperation"
+        :preview="(input) => store.previewTransfer(transferPot!.id, input, transferOperation)"
+        :confirm="(input) => store.transferMoney(transferPot!.id, input, transferOperation)"
+        @complete="transferPotId = null"
       />
     </BaseModal>
     <BaseModal

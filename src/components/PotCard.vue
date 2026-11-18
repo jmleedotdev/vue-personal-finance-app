@@ -6,7 +6,7 @@ import type { Pot } from '@/stores/pots'
 import { formatCurrency } from '@/utils/currency'
 
 const { pot } = defineProps<{ pot: Pot; canAddMoney: boolean }>()
-const emit = defineEmits<{ edit: [id: string]; addMoney: [id: string] }>()
+const emit = defineEmits<{ edit: [id: string]; addMoney: [id: string]; withdraw: [id: string] }>()
 const menuOpen = ref(false)
 const menuRoot = useTemplateRef('menuRoot')
 const trigger = useTemplateRef('trigger')
@@ -122,7 +122,9 @@ const percentageText = computed(() => `${Number(percentage.value.toFixed(2))}%`)
       <BaseButton variant="secondary" :disabled="!canAddMoney" @click="emit('addMoney', pot.id)"
         >+ Add Money</BaseButton
       >
-      <BaseButton variant="secondary" disabled>Withdraw</BaseButton>
+      <BaseButton variant="secondary" :disabled="pot.total === 0" @click="emit('withdraw', pot.id)"
+        >Withdraw</BaseButton
+      >
     </div>
   </article>
 </template>

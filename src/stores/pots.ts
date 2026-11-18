@@ -4,6 +4,7 @@ import demo from '@/data/demo.json'
 import { parsePositiveUsd } from '@/utils/currency'
 import { budgetThemes } from '@/utils/budgetThemes'
 
+export type PotTransferOperation = 'add' | 'withdraw'
 export type PotInput = { name: string; target: number; theme: string }
 
 export const usePotsStore = defineStore('pots', () => {
@@ -47,18 +48,21 @@ export const usePotsStore = defineStore('pots', () => {
     return true
   }
   // Preview and confirmation share validation, but confirmation always reads live state.
-  function previewAddition(id: string, input: string) {
+  function previewTransfer(id: string, input: string, operation: PotTransferOperation) {
     const pot = pots.value.find((pot) => pot.id === id)
     const amount = parsePositiveUsd(input)
     if (!pot || amount === null)
       return { error: 'Enter an amount above $0 with up to 2 decimal places.' }
-    if (amount > currentBalance.value)
-      return { error: `Enter an amount within your available Current Balance.` }
+    if (operation === 'add' && amount > currentBalance.value)
+      return { error: 'Enter an amount within your available Current Balance.' }
+    if (operation === 'withdraw' && amount > pot.total)
+      return { error: 'Enter an amount within this pot’s saved amount.' }
     const savedCents = Math.round(pot.total * 100)
     const balanceCents = Math.round(currentBalance.value * 100)
     const amountCents = Math.round(amount * 100)
-    const totalCents = savedCents + amountCents
-    const remainingCents = balanceCents - amountCents
+    const changeCents = operation === 'add' ? amountCents : -amountCents
+    const totalCents = savedCents + changeCents
+    const remainingCents = balanceCents - changeCents
     const total = totalCents / 100
     const balance = remainingCents / 100
     if (
@@ -67,14 +71,20 @@ export const usePotsStore = defineStore('pots', () => {
       !Number.isSafeInteger(balanceCents) ||
       balanceCents < 0 ||
       !Number.isSafeInteger(totalCents) ||
-      parsePositiveUsd(String(total)) !== total ||
+      !Number.isSafeInteger(remainingCents) ||
+      totalCents < 0 ||
+      remainingCents < 0 ||
+      // Safe integer cents can still lose a cent when converted to decimal dollars.
+      Math.round(total * 100) !== totalCents ||
+      Math.round(balance * 100) !== remainingCents ||
+      (total !== 0 && parsePositiveUsd(String(total)) !== total) ||
       (balance !== 0 && parsePositiveUsd(String(balance)) !== balance)
     )
-      return { error: 'This addition would exceed the supported safe monetary values.' }
+      return { error: 'This transfer would exceed the supported safe monetary values.' }
     return { error: '', total, balance }
   }
-  function addMoney(id: string, input: string) {
-    const result = previewAddition(id, input)
+  function transferMoney(id: string, input: string, operation: PotTransferOperation) {
+    const result = previewTransfer(id, input, operation)
     const pot = pots.value.find((pot) => pot.id === id)
     if (!pot || result.total === undefined || result.balance === undefined) return false
     // Synchronous validation and mutation: neither side changes on a rejected transfer.
@@ -84,8 +94,8 @@ export const usePotsStore = defineStore('pots', () => {
   }
   return {
     pots,
-    previewAddition,
-    addMoney,
+    previewTransfer,
+    transferMoney,
     currentBalance,
     totalSaved,
     themeOptions,

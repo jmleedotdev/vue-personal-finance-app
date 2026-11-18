@@ -40,7 +40,7 @@ for (const { width, height } of [
     for (const button of await page.getByRole('button', { name: '+ Add Money', exact: true }).all())
       await expect(button).toBeEnabled()
     for (const button of await page.getByRole('button', { name: 'Withdraw', exact: true }).all())
-      await expect(button).toBeDisabled()
+      await expect(button).toBeEnabled()
     const cards = await page.locator('article').evaluateAll((articles) =>
       articles.map((article) => {
         const box = article.getBoundingClientRect()
