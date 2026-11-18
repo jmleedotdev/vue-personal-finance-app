@@ -2,7 +2,7 @@
 
 A client-rendered Vue 3 / TypeScript demo with a responsive Overview, local Public Sans typography, Tailwind theme tokens, and accessible shared controls.
 
-The Overview shows balance summaries, scrollable pots and recent transactions, an interactive budget chart, and calculated recurring-bill summaries. Navigation uses a desktop sidebar (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. The lazy-loaded Transactions page shows the full demo history in responsive, read-only rows, ten records per page. Pagination is URL-backed (`/transactions?page=2`), restores on refresh and browser Back/Forward, and uses compact mobile controls. Explicit page changes scroll to and focus the Transactions heading. Search and category/sort controls are not implemented yet. Budgets, Pots, and Recurring Bills destination pages remain unavailable; there is no backend, authentication, or persistence.
+The Overview shows balance summaries, scrollable pots and recent transactions, an interactive budget chart, and calculated recurring-bill summaries. Navigation uses a desktop sidebar (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. The lazy-loaded Transactions page shows the full demo history in responsive, read-only rows, ten records per page. Pagination is URL-backed (`/transactions?page=2`), restores on refresh and browser Back/Forward, and uses compact mobile controls. Explicit page changes scroll to and focus the Transactions heading. Search and category/sort controls are not implemented yet. Pots browsing is available from navigation and Overview, with responsive savings-goal cards and shared session-only Pots/Current Balance state. Pot creation, management, and transfers are not implemented yet; their controls are disabled. There is no backend, authentication, or persistence.
 
 ## Development
 
@@ -70,9 +70,11 @@ Playwright checks reference, intermediate, and narrow widths for responsive navi
 - `src/App.vue`: shared responsive shell and routed content.
 - `src/components/AppNavigation.vue`: navigation modes and menu state.
 - `src/views/HomeView.vue`: Overview entry and responsive layout for balances, pots, recent transactions, budgets, and recurring bills.
-- `src/components/BalanceSummary.vue`: independent supplied balance summaries from `src/data/demo.json`, not transaction-derived totals.
+- `src/components/BalanceSummary.vue`: Current Balance from the shared Pots store, plus supplied Income/Expenses from `src/data/demo.json`; none are transaction-derived totals.
+- `src/stores/pots.ts`: session-only copies of demo Pots and Current Balance, plus reactive Total Saved. Existing savings are already excluded from the initial Current Balance.
+- `src/views/PotsView.vue`: responsive read-only savings-goal browsing.
 - `src/components/Base*.vue`: shared accessible controls.
 - `src/assets/main.css`: theme tokens, typography, and local font setup.
 - `src/assets/`: bundled local logos, icons, fonts (license retained), and avatars.
 
-Implemented routes are `/` (Overview) and `/transactions` (paginated full transaction history). Private design references remain in a Git-ignored local file, never in production code or tracked documentation.
+Implemented routes are `/` (Overview), `/transactions` (paginated full transaction history), `/budgets`, `/recurring-bills`, and `/pots` (savings-goal browsing). Private design references remain in a Git-ignored local file, never in production code or tracked documentation.

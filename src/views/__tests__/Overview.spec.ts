@@ -244,7 +244,7 @@ describe('Overview', () => {
     )
   })
 
-  it('marks Overview active and explains why unfinished destinations are unavailable', async () => {
+  it('marks Overview active and links all implemented destinations', async () => {
     const screen = await renderOverview()
     const navigation = screen.get('nav[aria-label="Main navigation"]')
     expect(navigation.get('a[aria-current="page"]').text()).toBe('Overview')
@@ -252,16 +252,10 @@ describe('Overview', () => {
       '/',
       '/transactions',
       '/budgets',
+      '/pots',
       '/recurring-bills',
     ])
-    for (const label of ['Pots']) {
-      const destination = navigation
-        .findAll('button')
-        .find((button) => button.attributes('aria-label') === label)!
-      expect(destination.attributes('disabled')).toBeDefined()
-      const description = destination.attributes('aria-describedby')
-      expect(screen.get(`#${description}`).text()).toBe('This section is not available yet.')
-    }
+    expect(navigation.findAll('button')).toHaveLength(0)
   })
 
   it('includes every supplied Pot and Total Saved, not just the first four previews', async () => {
@@ -277,22 +271,18 @@ describe('Overview', () => {
     ])
   })
 
-  it('names the keyboard-accessible preview and explains its scroll and unavailable detail action', async () => {
+  it('names the keyboard-accessible preview, explains scrolling, and links to Pots', async () => {
     const screen = await renderOverview()
     const pots = screen.get('section[aria-labelledby="pots-heading"]')
     const preview = pots.get('[role="region"][aria-label="Savings pots"]')
     expect(preview.attributes('tabindex')).toBe('0')
     expect(screen.get(`#${preview.attributes('aria-describedby')}`).text()).toContain(
-      'Use arrow keys when focused, swipe, or scroll to reach all five pots.',
+      'Use arrow keys when focused, swipe, or scroll to reach all pots.',
     )
     expect(preview.text()).not.toContain('Total Saved')
-    const details = pots.get('button')
+    const details = pots.get('a')
     expect(details.text()).toBe('See Details')
-    expect(details.attributes('disabled')).toBeDefined()
-    expect(screen.get(`#${details.attributes('aria-describedby')}`).text()).toBe(
-      'The Pots page is not available yet.',
-    )
-    expect(pots.find('a').exists()).toBe(false)
+    expect(details.attributes('href')).toBe('/pots')
   })
 
   it('shows ten recent transactions in supplied preview order with signed amounts and calendar dates', async () => {

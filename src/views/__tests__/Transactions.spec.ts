@@ -495,7 +495,7 @@ describe('Transactions', () => {
         screen
           .findAll('nav[aria-label="Main navigation"] button[disabled]')
           .map((button) => button.attributes('aria-label')),
-      ).toEqual(['Pots'])
+      ).toEqual([])
       await screen.get('nav a[aria-label="Overview"]').trigger('click')
       await flushPromises()
       expect(screen.get('h1').text()).toBe('Overview')

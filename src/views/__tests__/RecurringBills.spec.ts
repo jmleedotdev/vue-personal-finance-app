@@ -17,7 +17,10 @@ afterEach(() => {
 async function renderApp(path = '/recurring-bills') {
   const router = createRouter({ history: createMemoryHistory(), routes })
   await router.push(path)
-  const screen = mount(App, { attachTo: document.body, global: { plugins: [createPinia(), router] } })
+  const screen = mount(App, {
+    attachTo: document.body,
+    global: { plugins: [createPinia(), router] },
+  })
   screens.push(screen)
   await flushPromises()
   return { screen, router }
@@ -580,7 +583,7 @@ describe('Recurring Bills', () => {
       expect(screen.get('a[href="#main-content"]').text()).toBe('Skip to content')
       expect(
         screen.findAll('nav button[disabled]').map((button) => button.attributes('aria-label')),
-      ).toEqual(['Pots'])
+      ).toEqual([])
       await screen.get('nav a[aria-label="Overview"]').trigger('click')
       await flushPromises()
       expect(screen.get('h1').text()).toBe('Overview')

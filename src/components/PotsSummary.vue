@@ -1,20 +1,25 @@
 <script setup lang="ts">
-import demo from '@/data/demo.json'
+import { storeToRefs } from 'pinia'
+import { RouterLink } from 'vue-router'
+import { usePotsStore } from '@/stores/pots'
+import IconCaretRight from '@/components/icons/IconCaretRight.vue'
 import IconPot from '@/components/icons/IconPot.vue'
-import BaseButton from '@/components/BaseButton.vue'
 import { formatCurrency } from '@/utils/currency'
 
-const totalSaved = demo.pots.reduce((total, pot) => total + pot.total, 0)
+const { pots, totalSaved } = storeToRefs(usePotsStore())
 </script>
 
 <template>
   <section aria-labelledby="pots-heading" class="min-w-0 rounded-xl bg-white px-5 py-6 md:p-8">
     <header class="mb-5 flex items-center justify-between gap-4">
       <h2 id="pots-heading" class="text-preset-2">Pots</h2>
-      <BaseButton variant="tertiary" trailing-caret disabled aria-describedby="pots-unavailable">
+      <RouterLink
+        to="/pots"
+        class="inline-flex shrink-0 items-center gap-3 rounded-lg text-preset-4 text-gray-500 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gray-900"
+      >
         See Details
-      </BaseButton>
-      <p id="pots-unavailable" class="sr-only">The Pots page is not available yet.</p>
+        <IconCaretRight />
+      </RouterLink>
     </header>
     <div class="flex min-w-0 flex-col gap-5 md:flex-row md:items-start">
       <div
@@ -36,8 +41,8 @@ const totalSaved = demo.pots.reduce((total, pot) => total + pot.total, 0)
         >
           <ul class="grid auto-rows-[43px] grid-cols-2 gap-x-4 gap-y-4">
             <li
-              v-for="pot in demo.pots"
-              :key="pot.name"
+              v-for="pot in pots"
+              :key="pot.id"
               class="min-w-0 rounded-xs border-l-4 pl-4"
               :style="{ borderColor: pot.theme }"
             >
@@ -47,7 +52,7 @@ const totalSaved = demo.pots.reduce((total, pot) => total + pot.total, 0)
           </ul>
         </div>
         <p id="pots-scroll-help" class="sr-only">
-          Use arrow keys when focused, swipe, or scroll to reach all five pots.
+          Use arrow keys when focused, swipe, or scroll to reach all pots.
         </p>
       </div>
     </div>

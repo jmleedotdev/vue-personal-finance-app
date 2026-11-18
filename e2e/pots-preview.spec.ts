@@ -10,10 +10,7 @@ for (const width of [1440, 768, 375, 320]) {
     const card = page.getByRole('region', { name: 'Pots', exact: true })
     const preview = page.getByRole('region', { name: 'Savings pots' })
     await expect(card.getByText('$920', { exact: true })).toBeVisible()
-    await expect(card.getByRole('button', { name: 'See Details' })).toBeDisabled()
-    await expect(card.getByRole('button', { name: 'See Details' })).toHaveAccessibleDescription(
-      'The Pots page is not available yet.',
-    )
+    await expect(card.getByRole('link', { name: 'See Details' })).toHaveAttribute('href', '/pots')
     const geometry = await preview.evaluate((region) => {
       const bounds = region.getBoundingClientRect()
       return {

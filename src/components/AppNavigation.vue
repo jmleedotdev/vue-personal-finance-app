@@ -19,7 +19,7 @@ const views = [
   { label: 'Overview', icon: IconOverview, to: '/', routeName: 'overview' },
   { label: 'Transactions', icon: IconTransactions, to: '/transactions', routeName: 'transactions' },
   { label: 'Budgets', icon: IconBudgets, to: '/budgets', routeName: 'budgets' },
-  { label: 'Pots', icon: IconPots, to: undefined },
+  { label: 'Pots', icon: IconPots, to: '/pots', routeName: 'pots' },
   {
     label: 'Recurring Bills',
     icon: IconRecurringBills,

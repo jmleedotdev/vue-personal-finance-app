@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import demo from '@/data/demo.json'
+import { computed } from 'vue'
+import { usePotsStore } from '@/stores/pots'
 import { formatCurrency } from '@/utils/currency'
 
-const summaries = [
-  { label: 'Current Balance', value: demo.balance.current, primary: true },
+const pots = usePotsStore()
+const summaries = computed(() => [
+  { label: 'Current Balance', value: pots.currentBalance, primary: true },
   { label: 'Income', value: demo.balance.income, primary: false },
   { label: 'Expenses', value: demo.balance.expenses, primary: false },
-]
+])
 </script>
 
 <template>

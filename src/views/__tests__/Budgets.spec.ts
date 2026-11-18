@@ -695,7 +695,7 @@ describe('Budgets', () => {
       screen.findAll('[role="progressbar"]').map((bar) => bar.attributes('aria-valuenow')),
     ).toEqual(['30', '20', '100', '40'])
     expect(screen.findAll('article button[aria-haspopup="menu"]')).toHaveLength(4)
-    expect(screen.get('nav button[aria-label="Pots"]').attributes('disabled')).toBeDefined()
+    expect(screen.get('nav a[aria-label="Pots"]').attributes('href')).toBe('/pots')
     await screen.get('nav a[aria-label="Overview"]').trigger('click')
     await flushPromises()
     await screen.get('nav a[aria-label="Budgets"]').trigger('click')
