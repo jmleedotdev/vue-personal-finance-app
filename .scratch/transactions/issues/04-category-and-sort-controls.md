@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Browse the full history with URL-backed pagination.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 Specification: [Responsive Transactions Page](../spec.md). Follow the approved testing boundary and private-reference restrictions.
 
@@ -36,3 +36,8 @@ Ticket 03 owns submitted name search and can land before or after this ticket. I
 - Implemented on `dev` in `bec2771`: dataset-derived single-category filtering, stable UTC-calendar-day/name/signed-amount sorting, URL normalization/history restoration, responsive shared-select controls, and combined submitted-search coverage.
 - Validation: 87 unit/rendered-app tests and 67 production Chromium tests passed; type-check, lint, and production build passed. Compared desktop/tablet/mobile controls with cached private references; private inputs and browser captures remain ignored.
 - Independent review against the starting commit: Standards — no documented breaches or actionable smells; Spec — no missing, out-of-scope, or incorrect behavior identified.
+
+### Status reconciliation
+
+- Verified dataset-derived categories, all six stable sorts, shared responsive controls, URL restoration, and combined submitted-search/pagination coverage in the current implementation. Current `pnpm check` passes and all 87 production-preview Chromium checks pass, including responsive menus and combined refresh/history journeys. All acceptance criteria are checked complete; changed stale `ready-for-agent` status to `resolved`.
+- This reconciliation uses implementation inspection, existing review/visual-validation records, and fresh automated checks; it does not claim a new private-reference visual review.

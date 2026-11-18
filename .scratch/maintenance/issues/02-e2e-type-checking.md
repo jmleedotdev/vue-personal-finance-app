@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Implementation:** complete (validation recorded below).
 
@@ -31,3 +31,8 @@ Implementation validation:
 Origin: retrospective after shared recurring-bill pagination. The normal type-check passed because it excluded E2E tests. A standalone E2E check failed on missing browser globals; temporarily supplying DOM libraries exposed existing image/table element-typing errors in the Overview and Transactions browser tests. All 87 Chromium runtime checks passed during that feature's validation, so this addresses static coverage and test maintainability rather than a demonstrated application regression.
 
 This ticket can land before or after the local-commit-checks ticket. The latter invokes the normal type-check command and should automatically inherit E2E coverage once this work is complete; there is no blocking dependency between them.
+
+### Status reconciliation
+
+- Verified the committed E2E type-check integration (`fc9d2e9`), root project reference, and DOM-enabled strict E2E configuration. Current `pnpm check` passes expanded normal type-checking, lint, 145 app tests, 8 hook integration tests, and the production build; `pnpm test:browser` passes all 87 Chromium checks. The implementation record documents the intentional-error coverage probe. All acceptance criteria are checked complete; changed stale `ready-for-agent` status to `resolved`.
+- This reconciliation uses implementation inspection, existing review/visual-validation records, and fresh automated checks; it does not claim a new private-reference visual review.

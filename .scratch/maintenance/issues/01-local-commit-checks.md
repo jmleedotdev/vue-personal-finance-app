@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 **Implementation:** complete (validation recorded below).
 
@@ -31,3 +31,8 @@ Implementation validation:
 
 
 Origin: retrospective after shared recurring-bill pagination. The owner develops with local Git and no remote, so a local pre-commit guardrail replaces the originally suggested CI job. The E2E type-checking ticket is independent: this hook should invoke the normal type-check command so it gains expanded coverage when that ticket lands, without duplicating its implementation.
+
+### Status reconciliation
+
+- Verified the committed hook/check implementation (`e8b8102`), documented setup, and isolated-Git coverage. Current `pnpm check` passes lint, normal type-checking, 145 app tests, 8 hook integration tests, and the production build; `pnpm test:browser` passes all 87 production-preview Chromium checks. All acceptance criteria are checked complete; changed stale `ready-for-agent` status to `resolved`.
+- This reconciliation uses implementation inspection, existing review/visual-validation records, and fresh automated checks; it does not claim a new private-reference visual review.

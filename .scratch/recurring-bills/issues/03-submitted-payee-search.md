@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Open a responsive Recurring Bills page with calculated summaries.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Add a responsive search form using the shared input and button controls, matching the supplied Search bills field and magnifying-glass submit action. Give the input and submit button accessible names.
 - [x] Search only the payee name using case-insensitive substring matching. Trim surrounding whitespace on submission; category, amount, date, and other fields are not alternate search targets.
@@ -25,3 +25,8 @@
 Implemented on the current branch. Search uses a draft until form submission, normalizes applied URL state consistently with Transactions, preserves sort/unrelated query parameters, drops page constraints on submission, and retains full-month summaries. Added rendered-app/router coverage and focused Chromium checks for focus, scrolling, history restoration, and responsive fit at 1440, 768, 375, and 320px. Compared rendered layouts against cached responsive references without adding private material to tracked files.
 
 Validation: 126 unit/rendered-app tests and 81 browser tests passed; lint, type-check, and production build passed. The four new browser checks also passed against the production preview. Existing bill-image loading assertion now polls for completed local images instead of racing network completion. Full combined pagination validation remains with the pagination ticket.
+
+### Status reconciliation
+
+- Verified draft-versus-applied payee search, URL normalization, preserved summaries/sort, and rendered-app/browser coverage. The resolved pagination ticket supplies combined search/sort/page and history restoration coverage, completing the follow-on validation noted above. Current `pnpm check` passes and all 87 production-preview Chromium checks pass. All acceptance criteria are checked complete; changed stale `ready-for-agent` status to `resolved`.
+- This reconciliation uses implementation inspection, existing review/visual-validation records, and fresh automated checks; it does not claim a new private-reference visual review.

@@ -4,7 +4,7 @@
 
 **Blocked by:** 01: Open a responsive Recurring Bills page with calculated summaries.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Before adding bill sorting, extract the existing reusable sort-option definitions for use by Transactions and Recurring Bills. Offer exactly Latest, Oldest, A to Z, Z to A, Highest, Lowest in that order. Do not introduce a generic browsing framework.
 - [x] Keep feature-specific defaults and comparators separate. Recurring Bills defaults to Oldest, sorting ascending by current-reporting-month due date; Latest reverses that due-date order, not latest-payment order.
@@ -27,3 +27,8 @@ Implemented with shared sort options and feature-specific defaults/comparators. 
 Validation: all 112 Vitest tests passed, including Transactions/Overview regressions; type-checking, linting, and production build passed. Per owner approval, browser coverage is one targeted Chromium smoke test across desktop, tablet, and mobile (1.6 seconds), covering responsive triggers, dropdown fit, keyboard focus, dismissal, and no forced scrolling. The changed control was visually compared with the private references; reference artifacts remain ignored.
 
 Independent Standards and Spec reviews against baseline `3d9d46e` both returned no findings. Implementation commit: `565d806` (before this completion record).
+
+### Status reconciliation
+
+- Verified shared sort options, bill-specific comparators/default, URL state, and rendered-app/browser coverage in the current implementation. Subsequent search and pagination work now covers the previously conditional draft/applied-search composition and combined URL/history behavior. Current `pnpm check` passes and all 87 production-preview Chromium checks pass. All acceptance criteria are checked complete; changed stale `ready-for-agent` status to `resolved`.
+- This reconciliation uses implementation inspection, existing review/visual-validation records, and fresh automated checks; it does not claim a new private-reference visual review.
