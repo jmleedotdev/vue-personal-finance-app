@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import BaseButton from '@/components/BaseButton.vue'
 import PotCard from '@/components/PotCard.vue'
@@ -10,6 +10,15 @@ import { usePotsStore, type PotInput } from '@/stores/pots'
 const store = usePotsStore()
 const { pots, themeOptions, canAddPot } = storeToRefs(store)
 const adding = ref(false)
+const editingId = ref<string | null>(null)
+const editingPot = computed(() => pots.value.find((pot) => pot.id === editingId.value))
+const editNames = computed(() =>
+  pots.value.filter((pot) => pot.id !== editingId.value).map((pot) => pot.name),
+)
+const editThemes = computed(() => store.potThemeOptions(editingId.value ?? undefined))
+function savePot(input: PotInput) {
+  if (editingId.value && store.updatePot(editingId.value, input)) editingId.value = null
+}
 const heading = useTemplateRef('heading')
 function addPot(input: PotInput) {
   if (store.addPot(input)) adding.value = false
@@ -29,7 +38,7 @@ function addPot(input: PotInput) {
       >
     </header>
     <div class="grid min-w-0 gap-6 xl:grid-cols-2">
-      <PotCard v-for="pot in pots" :key="pot.id" :pot="pot" />
+      <PotCard v-for="pot in pots" :key="pot.id" :pot="pot" @edit="editingId = $event" />
     </div>
     <BaseModal
       v-if="adding"
@@ -39,6 +48,19 @@ function addPot(input: PotInput) {
       @close="adding = false"
     >
       <PotForm :themes="themeOptions" :names="pots.map((pot) => pot.name)" @submit="addPot" />
+    </BaseModal>
+    <BaseModal
+      v-if="editingPot"
+      heading="Edit Pot"
+      description="If your saving targets change, feel free to update your pots."
+      @close="editingId = null"
+    >
+      <PotForm
+        :initial-pot="editingPot"
+        :themes="editThemes"
+        :names="editNames"
+        @submit="savePot"
+      />
     </BaseModal>
   </main>
 </template>
