@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-**Implementation:** complete; see [validation and review](../validation-01.md).
+**Implementation:** complete; validation is recorded in Comments below.
 
 - [x] Budgets is reachable directly and from app navigation and Overview's See Details action. Active navigation follows the route, the main-content skip link works, and still-unimplemented destinations remain unavailable.
 - [x] Overview and Budgets consume the same reactive budget ownership and spending derivation, initialized from copies of bundled demo budgets without mutating demo records. A fresh app instance starts from demo budgets; no persistence or backend is introduced.
@@ -28,3 +28,13 @@
 ## Scope boundary
 
 Add, edit, delete, the shared modal, and theme-select extensions belong to subsequent tickets. This slice must remain demoable and green without those controls.
+
+## Comments
+
+Implemented and resolved. Navigation and Overview open Budgets; shared session state drives both pages. Monthly outgoing-only spending, overspending, all-month Latest Spending, category-only Transactions drill-down, and empty states are implemented. Add/Edit/Delete were subsequently completed in tickets 02–04.
+
+Original validation: 153 app tests, 8 tooling tests, lint, type checking, and production build passed. All 97 then-existing Chromium tests passed; the subsequently added zero-budget check also passed. Browser checks covered chart hover, navigation/reload, skip-link focus, category drill-down, responsive geometry (320–1440px), local assets, and bottom-navigation clearance. Rendered captures were compared with cached desktop/tablet/mobile references with no blocked visual checks.
+
+Original independent review: Spec — no findings; Standards — no violations, one non-blocking repeated-link-presentation concern retained in line with existing repository practice.
+
+Current status check: implementation and test coverage still match this slice; `pnpm check` and all 120 Chromium tests passed. Visual reference comparison was not repeated. Validation notes now live here instead of a separate Markdown file.

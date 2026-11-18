@@ -1,10 +1,10 @@
 # Budgets Page and Budget Management
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
-Users can see a budget summary on Overview but cannot open a dedicated Budgets page, inspect the spending behind each category, or add, edit, and delete their budgets. Budgets navigation and Overview's budget See Details action are unavailable.
+At the start of this feature, users could see a budget summary on Overview but could not open a dedicated Budgets page, inspect the spending behind each category, or add, edit, and delete their budgets. Budgets navigation and Overview's budget See Details action were unavailable.
 
 Users need a coherent view of monthly limits and actual spending, including overspending, with a straightforward way to manage those limits. The supplied desktop, tablet, and mobile designs differ in example records, totals, ordering, and some labels; users should see the same finances and terminology at every viewport rather than inconsistent screenshot examples.
 
@@ -169,7 +169,7 @@ Retain August 2024 as the reporting month. Monthly Spent counts only outgoing ca
 - Initialize isolated app/store state for each test and restore controlled demo fixtures. Navigation within a test retains budget state; a fresh app instance starts from demo budgets. Do not introduce test-only production mutation APIs.
 - Preserve existing shared-control coverage. Add focused public-contract coverage for reusable modal/select behavior only where it provides nonduplicative protection not adequately exercised through app journeys.
 - Use focused Playwright/Chromium checks for browser-dependent behavior, following existing budget-chart hover, responsive Overview, Transactions controls, and recurring-bill browser tests.
-- The rendered-app seam follows repository precedent and is proposed for owner confirmation at handoff. Spec publication is not authorization to implement or a claim that this seam has already been explicitly approved.
+- The owner confirmed the rendered-app/real-router and production-Chromium testing seams during ticket 02 implementation. Per-slice validation results are recorded in issue comments.
 
 ### Fast rendered-app coverage
 
@@ -215,10 +215,18 @@ Retain August 2024 as the reporting month. Monthly Spent counts only outgoing ca
 
 ## Further Notes
 
-- The product decisions were agreed in the preceding discussion. This spec synthesizes that agreement; it does not start implementation or claim tests have passed.
+- The product decisions were agreed in the preceding discussion. This spec records that agreement; implementation and validation status are recorded in Comments below and in the issue comments.
 - Budget, Maximum Spend, Spent, Remaining, and Latest Spending have been recorded in the root domain glossary. No new ADR is needed for the reversible component/state choices in this feature.
 - Private design references remain outside public/tracked material. Native screenshots are cached under `.scratch/design.local/` with the `budgets-` prefix: desktop, tablet, mobile, add, delete, menu, and the two selector references. The supplied selector node labels and local screenshot names are not a reliable indicator of their contents; inspect each image before use.
 - The reference index is `.scratch/references.local.md`. Follow the project's private-reference workflow; do not reproduce private URLs, file keys, screenshots, or reference-derived snapshots in tracked source, specs, tests, or public reports.
 - Shared-control design details beyond the cached frames must be checked against their design definitions before introducing new variants. Missing visual references block only the corresponding parity claim, not permission to invent a second design system.
 - The existing Overview setup computes budget categories once and imports demo data directly; it must adopt shared reactive ownership for edits to remain consistent. The existing chart already uses limit-based segments and supports pointer hover, so preserve rather than reinterpret that behavior.
 - No new implementation tickets are created by this spec publication; subsequent decomposition can produce separate local tickets if requested.
+
+## Comments
+
+Implemented and resolved across tickets [01 — Browse](issues/01-browse-budgets-and-category-transactions.md), [02 — Add](issues/02-add-budgets-with-shared-modal.md), [03 — Edit](issues/03-edit-budgets-from-card-menus.md), and [04 — Delete](issues/04-delete-budgets-and-recover-empty-state.md). Current implementation and test coverage support the specified browsing, management, shared session state, transaction retention, and empty-state recovery journeys. No outstanding feature work was identified in this status check.
+
+Current validation: `pnpm check` passed; `pnpm test:browser --retries=0` passed all 120 Chromium tests. One existing non-blocking browser-test conditional lint warning remains. Visual reference comparison was not repeated; earlier visual checks and their limitations remain in the issue comments. This is a status reconciliation, not a new independent code review.
+
+Validation and review summaries live in issue comments; separate validation Markdown files are unnecessary for this feature.

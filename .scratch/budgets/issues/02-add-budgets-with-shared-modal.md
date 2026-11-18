@@ -6,7 +6,7 @@
 
 **Status:** resolved
 
-**Implementation:** complete; see [validation and review](../validation-02.md).
+**Implementation:** complete; validation is recorded in Comments below.
 
 - [x] Add New Budget opens a fresh form with Budget Category, Maximum Spend, Theme, and Add Budget. Default to the first available category alphabetically and first unused theme in palette order; leave Maximum Spend blank.
 - [x] Offer existing transaction categories only, excluding budgeted categories. Do not allow category creation or duplicate budgets.
@@ -32,5 +32,12 @@ Do not expose inactive edit/delete actions. The modal shell is reusable, but pot
 
 ## Comments
 
-- Follow-up: shorten the Maximum Spend error to “Enter an amount above $0 with up to 2 decimal places.” Validation rules remain unchanged.
-- Follow-up: remove `addUnavailableReason` and the displayed explanation. Keep Add New Budget disabled when categories or themes are exhausted; use a boolean availability check instead. This supersedes the original explanation requirement.
+Implemented and resolved. Add uses the shared accessible `BaseModal` and budget-specific `BudgetForm`, validates positive cent-safe amounts, enforces category/theme availability, appends once, and synchronizes Budgets/Overview during the app session. Reload restores demo budgets. The owner confirmed the rendered-app/real-router and production-Chromium testing seams during implementation.
+
+Both follow-ups are complete: Maximum Spend now says “Enter an amount above $0 with up to 2 decimal places.” The store exposes boolean `canAddBudget`; Add is disabled on category/theme exhaustion without an explanation, and `addUnavailableReason` is absent.
+
+Original validation: `pnpm check` passed (177 app tests, 8 hook tests, lint, type checking, production build); all 105 then-existing Chromium tests passed. The 7 focused Add checks passed again after cancellation coverage was strengthened. Rendered-app and browser checks covered validation/correction, safe-cent boundaries, uniqueness, disabled themes, independent exhaustion conditions, zero-state recovery, focus containment/restoration, inert background/scroll lock, nested Escape, draft cancellation, responsive selectors, routing, and real reload. Cached page/modal/selector references and shared-control definitions were compared; no requested visual checks were blocked. Evidence was Chromium-only, not cross-browser or assistive-technology certification.
+
+Original independent reviews resolved two findings before completion: repeated submission types were consolidated into `BudgetInput`, and precision-losing upper-bound amounts were rejected using a displayed-cents guard with regression coverage. Final Standards and Spec reviews had no outstanding findings. Shared controls/theme tokens were reused without component-style exceptions.
+
+Current status check: implementation and test coverage still match this slice, including both follow-ups; `pnpm check` and all 120 Chromium tests passed. Visual reference comparison was not repeated. Validation notes now live here instead of a separate Markdown file.
