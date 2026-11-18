@@ -24,18 +24,20 @@ test.describe('Recurring Bills page', () => {
       await expect(page.locator('tbody tr')).toHaveCount(8)
       await expect(page.locator('tbody time').first()).toHaveText('Monthly - 2nd')
       await expect(page.locator('tbody time').first()).toHaveAttribute('datetime', '2024-08-02')
-      expect(
-        await page.locator('main img').evaluateAll((images) =>
-          images.every((image) => {
-            const img = image as HTMLImageElement
-            return (
-              img.complete &&
-              img.naturalWidth > 0 &&
-              (img.src.startsWith('data:image/') || new URL(img.src).origin === location.origin)
-            )
-          }),
-        ),
-      ).toBe(true)
+      await expect
+        .poll(() =>
+          page.locator('main img').evaluateAll((images) =>
+            images.every((image) => {
+              const img = image as HTMLImageElement
+              return (
+                img.complete &&
+                img.naturalWidth > 0 &&
+                (img.src.startsWith('data:image/') || new URL(img.src).origin === location.origin)
+              )
+            }),
+          ),
+        )
+        .toBe(true)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
       )

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BaseSelect from '@/components/BaseSelect.vue'
+import BaseInput from '@/components/BaseInput.vue'
+import BaseButton from '@/components/BaseButton.vue'
+import IconSearch from '@/components/icons/IconSearch.vue'
 import IconSort from '@/components/icons/IconSort.vue'
 import { sortOptions } from '@/utils/sortOptions'
 import demo from '@/data/demo.json'
@@ -14,6 +17,10 @@ import dueIcon from '@/assets/icons/bill-due.svg'
 const totals = summarizeRecurringBills(demo.transactions, REPORTING_DATE)
 const route = useRoute()
 const router = useRouter()
+const appliedSearch = computed(() =>
+  typeof route.query.search === 'string' ? route.query.search.trim() : '',
+)
+const draftSearch = ref(appliedSearch.value)
 const sort = computed(() =>
   sortOptions.some((option) => option.value === route.query.sort)
     ? String(route.query.sort)
@@ -22,9 +29,13 @@ const sort = computed(() =>
 watch(
   () => route.query,
   (query) => {
+    draftSearch.value = appliedSearch.value
+    const normalizedSearch = appliedSearch.value || undefined
     const normalizedSort = sort.value === 'Oldest' ? undefined : sort.value
-    if (query.sort !== normalizedSort) {
-      void router.replace({ query: { ...query, sort: normalizedSort } })
+    if (query.sort !== normalizedSort || query.search !== normalizedSearch) {
+      void router.replace({
+        query: { ...query, search: normalizedSearch, sort: normalizedSort },
+      })
     }
   },
   { immediate: true },
@@ -36,23 +47,32 @@ async function changeSort(value: string) {
   })
 }
 
+async function submitSearch() {
+  draftSearch.value = draftSearch.value.trim()
+  await router.push({
+    query: { ...route.query, search: draftSearch.value || undefined, page: undefined },
+  })
+}
+
 const bills = computed(() =>
-  [...totals.bills].sort((a, b) => {
-    switch (sort.value) {
-      case 'Latest':
-        return b.dueDate.localeCompare(a.dueDate)
-      case 'A to Z':
-        return a.name.localeCompare(b.name)
-      case 'Z to A':
-        return b.name.localeCompare(a.name)
-      case 'Highest':
-        return b.amount - a.amount
-      case 'Lowest':
-        return a.amount - b.amount
-      default:
-        return a.dueDate.localeCompare(b.dueDate)
-    }
-  }),
+  totals.bills
+    .filter((bill) => bill.name.toLowerCase().includes(appliedSearch.value.toLowerCase()))
+    .sort((a, b) => {
+      switch (sort.value) {
+        case 'Latest':
+          return b.dueDate.localeCompare(a.dueDate)
+        case 'A to Z':
+          return a.name.localeCompare(b.name)
+        case 'Z to A':
+          return b.name.localeCompare(a.name)
+        case 'Highest':
+          return b.amount - a.amount
+        case 'Lowest':
+          return a.amount - b.amount
+        default:
+          return a.dueDate.localeCompare(b.dueDate)
+      }
+    }),
 )
 const summaries = [
   { label: 'Paid Bills', count: totals.paidCount, amount: totals.paid },
@@ -116,7 +136,33 @@ function ordinal(day: number) {
         aria-label="Monthly recurring bills"
         class="min-w-0 rounded-xl bg-white px-5 py-6 md:p-8"
       >
-        <div class="mb-6 flex justify-end">
+        <div class="mb-6 flex min-w-0 items-center gap-4 md:gap-6">
+          <form
+            role="search"
+            aria-label="Search bills"
+            class="mr-auto min-w-0 flex-1 md:max-w-80"
+            @submit.prevent="submitSearch"
+          >
+            <BaseInput
+              v-model="draftSearch"
+              label="Search bills"
+              aria-label="Search bills"
+              hide-label
+              placeholder="Search bills"
+              type="search"
+            >
+              <template #trailing>
+                <BaseButton
+                  type="submit"
+                  variant="tertiary"
+                  aria-label="Submit search"
+                  class="size-9 cursor-pointer text-gray-900"
+                >
+                  <IconSearch />
+                </BaseButton>
+              </template>
+            </BaseInput>
+          </form>
           <BaseSelect
             inline
             label="Sort by"

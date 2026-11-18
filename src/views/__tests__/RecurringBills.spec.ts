@@ -32,12 +32,151 @@ async function chooseSort(screen: ReturnType<typeof mount>, value: string) {
 }
 
 describe('Recurring Bills', () => {
+  it('keeps typing as a draft and submits a trimmed partial payee search without changing reporting summaries', async () => {
+    const { screen, router } = await renderApp('/recurring-bills?sort=Highest&page=4&other=keep')
+    const input = screen.get('input[aria-label="Search bills"]')
+    await input.setValue('  eLeC  ')
+    expect(screen.findAll('tbody tr')).toHaveLength(8)
+    expect(router.currentRoute.value.query).toEqual({ sort: 'Highest', page: '4', other: 'keep' })
+    await screen.get('form[role="search"]').trigger('submit')
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({
+      sort: 'Highest',
+      search: 'eLeC',
+      other: 'keep',
+    })
+    expect((input.element as HTMLInputElement).value).toBe('eLeC')
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Spark Electric Solutions',
+    ])
+    expect(screen.get('section[aria-labelledby="total-bills-heading"] dd').text()).toBe('$384.98')
+    expect(
+      screen.findAll('section[aria-labelledby="bill-summary-heading"] dd').map((dd) => dd.text()),
+    ).toEqual(['4 ($190.00)', '4 ($194.98)', '2 ($59.98)'])
+  })
+
+  it('restores applied search over stale drafts on Back/Forward and keeps sorting independent of the draft', async () => {
+    const { screen, router } = await renderApp(
+      '/recurring-bills?search=Energy&sort=Highest&other=keep',
+    )
+    const input = screen.get('input')
+    const names = () => screen.findAll('tbody th').map((row) => row.text())
+    expect((input.element as HTMLInputElement).value).toBe('Energy')
+    expect(names()).toEqual(['EcoFuel Energy'])
+    await input.setValue('Nimbus')
+    await chooseSort(screen, 'Lowest')
+    expect(router.currentRoute.value.query).toEqual({
+      search: 'Energy',
+      sort: 'Lowest',
+      other: 'keep',
+    })
+    expect(names()).toEqual(['EcoFuel Energy'])
+    await input.setValue('  Data  ')
+    await screen.get('button[aria-label="Submit search"]').trigger('click')
+    await flushPromises()
+    expect(names()).toEqual(['Nimbus Data Storage'])
+    expect(router.currentRoute.value.query.search).toBe('Data')
+    // Reapplying the same search is not a new history stop.
+    await screen.get('form[role="search"]').trigger('submit')
+    await flushPromises()
+    await input.setValue('stale')
+    router.back()
+    await flushPromises()
+    expect((input.element as HTMLInputElement).value).toBe('Energy')
+    expect(names()).toEqual(['EcoFuel Energy'])
+    expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Lowest')
+    await input.setValue('another stale draft')
+    router.forward()
+    await flushPromises()
+    expect((input.element as HTMLInputElement).value).toBe('Data')
+    expect(names()).toEqual(['Nimbus Data Storage'])
+    const reloaded = await renderApp(router.currentRoute.value.fullPath)
+    expect(reloaded.screen.get('input').element.value).toBe('Data')
+    expect(reloaded.screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Nimbus Data Storage',
+    ])
+  })
+
+  it.each(['Entertainment', '100.00', '2024-08-02', 'Monthly', 'Paid', 'no such payee'])(
+    'searches payee names only and recovers from no matches with an empty submission: %s',
+    async (search) => {
+      const { screen, router } = await renderApp('/recurring-bills?sort=Highest')
+      await screen.get('input').setValue(search)
+      await screen.get('button[aria-label="Submit search"]').trigger('click')
+      await flushPromises()
+      expect(screen.findAll('tbody tr')).toHaveLength(0)
+      expect(screen.get('section[aria-label="Monthly recurring bills"] p').text()).toBe(
+        'No bills found',
+      )
+      expect(screen.get('input').attributes('disabled')).toBeUndefined()
+      expect(
+        screen.get('button[aria-label="Submit search"]').attributes('disabled'),
+      ).toBeUndefined()
+      expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Highest')
+      expect(screen.text()).not.toContain('Clear filters')
+      expect(screen.get('section[aria-labelledby="total-bills-heading"] dd').text()).toBe('$384.98')
+      expect(
+        screen.findAll('section[aria-labelledby="bill-summary-heading"] dd').map((dd) => dd.text()),
+      ).toEqual(['4 ($190.00)', '4 ($194.98)', '2 ($59.98)'])
+      await screen.get('input').setValue('   ')
+      await screen.get('form[role="search"]').trigger('submit')
+      await flushPromises()
+      expect(router.currentRoute.value.query).toEqual({ sort: 'Highest' })
+      expect(screen.get('input').element.value).toBe('')
+      expect(screen.findAll('tbody tr')).toHaveLength(8)
+      expect(screen.get('tbody th').text()).toBe('Spark Electric Solutions')
+    },
+  )
+
+  it.each([
+    ['search=%20dAtA%20', 'dAtA', ['Nimbus Data Storage']],
+    ['search=', '', null],
+    ['search', '', null],
+    ['search=%20%20', '', null],
+    ['search=Energy&search=Data', '', null],
+    ['search&search=Energy', '', null],
+  ])(
+    'normalizes applied search on direct entry without an extra history stop: %s',
+    async (query, applied, expected) => {
+      const { screen, router } = await renderApp(
+        `/recurring-bills?${query}&sort=Lowest&other=one&other=two&page=3`,
+      )
+      expect(router.currentRoute.value.query).toEqual({
+        ...(applied ? { search: applied } : {}),
+        sort: 'Lowest',
+        other: ['one', 'two'],
+        page: '3',
+      })
+      expect(screen.get('input').element.value).toBe(applied)
+      expect(screen.findAll('tbody th').map((row) => row.text())).toEqual(
+        expected ?? [
+          'Nimbus Data Storage',
+          'Pixel Playground',
+          'Serenity Spa & Wellness',
+          'EcoFuel Energy',
+          'ByteWise',
+          'Elevate Education',
+          'Spark Electric Solutions',
+          'Aqua Flow Utilities',
+        ],
+      )
+      await screen.get('input').setValue('Byte')
+      await screen.get('form[role="search"]').trigger('submit')
+      await flushPromises()
+      router.back()
+      await flushPromises()
+      expect(screen.get('input').element.value).toBe(applied)
+      expect(router.currentRoute.value.query.page).toBe('3')
+      expect(router.currentRoute.value.query.other).toEqual(['one', 'two'])
+    },
+  )
+
   it('pushes sort changes, drops page constraints, restores history and reloads without leaking into Transactions', async () => {
-    const { screen, router } = await renderApp('/recurring-bills?search=applied&other=keep&page=4')
+    const { screen, router } = await renderApp('/recurring-bills?search=e&other=keep&page=4')
     const names = () => screen.findAll('tbody th').map((row) => row.text())
     await chooseSort(screen, 'Highest')
     expect(router.currentRoute.value.query).toEqual({
-      search: 'applied',
+      search: 'e',
       other: 'keep',
       sort: 'Highest',
     })
@@ -52,7 +191,7 @@ describe('Recurring Bills', () => {
       'Nimbus Data Storage',
     ])
     await chooseSort(screen, 'Oldest')
-    expect(router.currentRoute.value.query).toEqual({ search: 'applied', other: 'keep' })
+    expect(router.currentRoute.value.query).toEqual({ search: 'e', other: 'keep' })
     // Selecting the already applied option must not create another history entry.
     await chooseSort(screen, 'Oldest')
     router.back()
@@ -61,7 +200,7 @@ describe('Recurring Bills', () => {
     expect(names().slice(0, 2)).toEqual(['Spark Electric Solutions', 'Aqua Flow Utilities'])
     router.back()
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({ search: 'applied', other: 'keep', page: '4' })
+    expect(router.currentRoute.value.query).toEqual({ search: 'e', other: 'keep', page: '4' })
     expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
     router.forward()
     await flushPromises()
@@ -123,10 +262,10 @@ describe('Recurring Bills', () => {
     'normalizes malformed or redundant sort state without losing unrelated query parameters: %s',
     async (query) => {
       const { screen, router } = await renderApp(
-        `/recurring-bills?${query}&search=keep&other=one&other=two&page=3`,
+        `/recurring-bills?${query}&search=e&other=one&other=two&page=3`,
       )
       expect(router.currentRoute.value.query).toEqual({
-        search: 'keep',
+        search: 'e',
         other: ['one', 'two'],
         page: '3',
       })
@@ -137,7 +276,7 @@ describe('Recurring Bills', () => {
       router.back()
       await flushPromises()
       expect(router.currentRoute.value.query).toEqual({
-        search: 'keep',
+        search: 'e',
         other: ['one', 'two'],
         page: '3',
       })
@@ -395,7 +534,7 @@ describe('Recurring Bills', () => {
       '$35.00',
       '$100.00',
     ])
-    expect(screen.find('input').exists()).toBe(false)
+    expect(screen.get('input').attributes('placeholder')).toBe('Search bills')
     expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
   })
 })
