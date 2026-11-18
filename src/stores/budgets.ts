@@ -19,12 +19,9 @@ export const useBudgetsStore = defineStore('budgets', () => {
       return { ...theme, disabled, disabledText: disabled ? 'Already used' : '' }
     }),
   )
-  const addUnavailableReason = computed(() =>
-    !availableCategories.value.length
-      ? 'All transaction categories already have a budget.'
-      : !themeOptions.value.some((theme) => !theme.disabled)
-        ? 'All budget themes are already used.'
-        : '',
+  const canAddBudget = computed(
+    () =>
+      availableCategories.value.length > 0 && themeOptions.value.some((theme) => !theme.disabled),
   )
 
   function addBudget(budget: BudgetInput) {
@@ -69,7 +66,7 @@ export const useBudgetsStore = defineStore('budgets', () => {
       }
     }),
   )
-  return { budgets, categories, availableCategories, themeOptions, addUnavailableReason, addBudget }
+  return { budgets, categories, availableCategories, themeOptions, canAddBudget, addBudget }
 })
 
 export type BudgetInput = { category: string; maximum: number; theme: string }

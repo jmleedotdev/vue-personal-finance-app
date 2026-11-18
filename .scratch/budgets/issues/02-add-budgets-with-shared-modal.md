@@ -14,7 +14,7 @@
 - [x] Invalid submission retains the draft and dialog, shows accessible field errors, and leaves saved budget state unchanged. Correcting input permits successful submission.
 - [x] Use a fixed named design-evidenced theme palette in design order. Show swatches, keep themes used by other budgets visible but disabled with Already used text, and respect disabled choices in pointer and keyboard interactions. Pot themes do not reserve budget colors.
 - [x] Extend the existing shared select narrowly for required swatches and disabled-option behavior, preserving current Transactions and Recurring Bills consumers. Reuse shared buttons, inputs, theme tokens, and local icons; inspect relevant shared design definitions before introducing variants.
-- [x] Disable Add New Budget when either no unused category or no unused theme remains, with an associated explanation. Independently cover both exhaustion conditions using controlled data.
+- [x] Disable Add New Budget when either no unused category or no unused theme remains, without showing an unavailability explanation. Independently cover both exhaustion conditions using controlled data.
 - [x] Successful submission commits once, appends the Budget, closes the dialog, and updates cards, summary, chart, and Overview. Preserve existing order and bundled demo records.
 - [x] Added budgets survive navigation between Budgets and Overview but reset to demo budgets on reload or a fresh app instance; do not add storage or an API.
 - [x] Build a shared BaseModal for overlay, responsive panel, accessible heading/description, close, background isolation, focus containment, and restoration. Keep budget fields and validation in a separate form reusable for Edit; do not build a universal form framework or pot functionality.
@@ -33,3 +33,4 @@ Do not expose inactive edit/delete actions. The modal shell is reusable, but pot
 ## Comments
 
 - Follow-up: shorten the Maximum Spend error to “Enter an amount above $0 with up to 2 decimal places.” Validation rules remain unchanged.
+- Follow-up: remove `addUnavailableReason` and the displayed explanation. Keep Add New Budget disabled when categories or themes are exhausted; use a boolean availability check instead. This supersedes the original explanation requirement.

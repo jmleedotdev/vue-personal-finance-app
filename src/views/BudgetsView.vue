@@ -10,7 +10,7 @@ import { useBudgetsStore, budgetReportingPeriod, type BudgetInput } from '@/stor
 import { formatCurrency } from '@/utils/currency'
 
 const store = useBudgetsStore()
-const { categories, availableCategories, themeOptions, addUnavailableReason } = storeToRefs(store)
+const { categories, availableCategories, themeOptions, canAddBudget } = storeToRefs(store)
 const adding = ref(false)
 const heading = useTemplateRef('heading')
 
@@ -29,17 +29,10 @@ function addBudget(budget: BudgetInput) {
       <h1 ref="heading" tabindex="-1" class="text-preset-1 md:flex md:h-14 md:items-center">
         Budgets
       </h1>
-      <BaseButton
-        aria-label="Add New Budget"
-        :disabled="!!addUnavailableReason"
-        :aria-describedby="addUnavailableReason ? 'add-budget-unavailable' : undefined"
-        @click="adding = true"
+      <BaseButton aria-label="Add New Budget" :disabled="!canAddBudget" @click="adding = true"
         >+ Add New Budget</BaseButton
       >
     </header>
-    <p v-if="addUnavailableReason" id="add-budget-unavailable" class="text-gray-500">
-      {{ addUnavailableReason }}
-    </p>
     <div class="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,0.7fr)_minmax(0,1fr)]">
       <section
         aria-labelledby="spending-summary-heading"

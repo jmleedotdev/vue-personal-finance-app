@@ -111,7 +111,8 @@ test('Add validates, synchronizes navigation, resets on real reload and keeps fo
     await expect(dialog).toHaveCount(0)
   }
   await expect(add).toBeDisabled()
-  await expect(add).toHaveAccessibleDescription('All transaction categories already have a budget.')
+  await expect(add).toHaveAccessibleDescription('')
+  await expect(page.getByText('All transaction categories already have a budget.')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Budgets', exact: true })).toBeFocused()
   await expect(page.getByRole('article')).toHaveCount(10)
 })

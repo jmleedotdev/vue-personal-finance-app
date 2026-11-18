@@ -153,7 +153,7 @@ describe('Budgets', () => {
   })
 
   it.each(['categories', 'themes'])(
-    'disables Add with an associated explanation when %s alone are exhausted',
+    'disables Add without an explanation when %s alone are exhausted',
     async (resource) => {
       if (resource === 'categories') {
         demo.transactions.splice(
@@ -202,10 +202,9 @@ describe('Budgets', () => {
       const { screen } = await renderApp()
       const add = screen.get('button[aria-label="Add New Budget"]')
       expect(add.attributes('disabled')).toBeDefined()
-      const explanation = screen.get(`[id="${add.attributes('aria-describedby')}"]`).text()
-      expect(explanation).toContain(
-        resource === 'categories' ? 'All transaction categories' : 'All budget themes',
-      )
+      expect(add.attributes('aria-describedby')).toBeUndefined()
+      expect(screen.text()).not.toContain('All transaction categories already have a budget.')
+      expect(screen.text()).not.toContain('All budget themes are already used.')
       expect(screen.find('[role="dialog"]').exists()).toBe(false)
     },
   )

@@ -132,7 +132,7 @@ Retain August 2024 as the reporting month. Monthly Spent counts only outgoing ca
 - Use a fixed, named, design-evidenced theme palette in design order. Reuse existing theme tokens, extending them only where the palette requires missing colors. Arbitrary custom colors are not supported.
 - Each theme may be used by at most one Budget. Other budgets' themes remain visible but disabled and marked Already used; keyboard navigation and selection must respect disabled options. An edited Budget's own theme remains selectable.
 - Budget and pot theme availability are independent. Existing pots do not reserve colors for budgets.
-- Disable Add New Budget if either no unbudgeted categories or no unused themes remain. Supply an understandable explanation associated with the disabled state; do not open an impossible form.
+- Disable Add New Budget if either no unbudgeted categories or no unused themes remain. Do not show an unavailability explanation; do not open an impossible form.
 - Edit Budget opens the same budget form with saved category, Maximum Spend, and theme. Present an Edit Budget heading and Save Changes action.
 - Successful add/edit commits once, closes the dialog, and updates cards, chart, summary, and Overview. Validation failure retains the dialog and draft, shows accessible field errors, and does not alter saved data.
 - The card kebab dropdown offers Edit Budget and Delete Budget, with destructive visual treatment for deletion. Provide accessible trigger names identifying the card and standard keyboard opening, action selection, Escape/outside dismissal, and focus behavior. Avoid retaining an open menu behind a modal.
