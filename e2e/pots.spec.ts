@@ -34,8 +34,8 @@ for (const { width, height } of [
       '$10.00',
       '$531.00',
     ])
-    await expect(page.getByRole('button', { name: '+ Add New Pot', exact: true })).toBeDisabled()
-    for (const button of await page.locator('main button').all())
+    await expect(page.getByRole('button', { name: 'Add New Pot', exact: true })).toBeEnabled()
+    for (const button of await page.locator('article button').all())
       await expect(button).toBeDisabled()
     const cards = await page.locator('article').evaluateAll((articles) =>
       articles.map((article) => {

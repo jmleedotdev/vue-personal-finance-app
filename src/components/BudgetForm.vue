@@ -4,7 +4,7 @@ import BaseButton from '@/components/BaseButton.vue'
 import BaseInput from '@/components/BaseInput.vue'
 import BaseSelect from '@/components/BaseSelect.vue'
 import type { BudgetInput } from '@/stores/budgets'
-import { formatCurrency } from '@/utils/currency'
+import { parsePositiveUsd } from '@/utils/currency'
 
 const { categories, themes, initialBudget } = defineProps<{
   initialBudget?: BudgetInput
@@ -31,24 +31,11 @@ function submit(event: Event) {
   themeError.value = themes.some((option) => option.value === theme.value && !option.disabled)
     ? ''
     : 'Choose an unused theme.'
-  const value = maximum.value.trim()
-  let cents = 0n
-  if (/^(?:\d+(\.\d{0,2})?|\.\d{1,2})$/.test(value)) {
-    const [dollars = '0', fraction = ''] = value.split('.')
-    cents = BigInt(dollars) * 100n + BigInt(fraction.padEnd(2, '0'))
-  }
-  const amount = Number(cents) / 100
-  if (
-    cents <= 0n ||
-    cents > BigInt(Number.MAX_SAFE_INTEGER) ||
-    Math.round(amount * 100) !== Number(cents) ||
-    // Intl formats the shortest decimal dollar representation, which can lose a cent
-    // near the safe-integer boundary even when multiplying back appears to round-trip.
-    BigInt(formatCurrency(amount).replace(/\D/g, '')) !== cents
-  ) {
+  const amount = parsePositiveUsd(maximum.value)
+  if (amount === null) {
     amountError.value = 'Enter an amount above $0 with up to 2 decimal places.'
   }
-  if (amountError.value || categoryError.value || themeError.value) {
+  if (amountError.value || categoryError.value || themeError.value || amount === null) {
     const form = event.currentTarget as HTMLFormElement
     void nextTick(() => form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus())
     return

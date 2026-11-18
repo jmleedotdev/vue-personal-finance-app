@@ -2,7 +2,7 @@
 
 A client-rendered Vue 3 / TypeScript demo with a responsive Overview, local Public Sans typography, Tailwind theme tokens, and accessible shared controls.
 
-The Overview shows balance summaries, scrollable pots and recent transactions, an interactive budget chart, and calculated recurring-bill summaries. Navigation uses a desktop sidebar (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. The lazy-loaded Transactions page shows the full demo history in responsive, read-only rows, ten records per page. Pagination is URL-backed (`/transactions?page=2`), restores on refresh and browser Back/Forward, and uses compact mobile controls. Explicit page changes scroll to and focus the Transactions heading. Search and category/sort controls are not implemented yet. Pots browsing is available from navigation and Overview, with responsive savings-goal cards and shared session-only Pots/Current Balance state. Pot creation, management, and transfers are not implemented yet; their controls are disabled. There is no backend, authentication, or persistence.
+The Overview shows balance summaries, scrollable pots and recent transactions, an interactive budget chart, and calculated recurring-bill summaries. Navigation uses a desktop sidebar (including in-memory minimization), tablet labeled bottom navigation, and mobile icon navigation. The lazy-loaded Transactions page shows the full demo history in responsive, read-only rows, ten records per page. Pagination is URL-backed (`/transactions?page=2`), restores on refresh and browser Back/Forward, and uses compact mobile controls. Explicit page changes scroll to and focus the Transactions heading. Search and category/sort controls are not implemented yet. Pots browsing is available from navigation and Overview, with responsive savings-goal cards and shared session-only Pots/Current Balance state. Add New Pot creates uniquely named, zero-savings goals with validated USD targets and independent pot theme availability. Creation updates Overview without moving money; management and transfer controls remain disabled. There is no backend, authentication, or persistence.
 
 ## Development
 
@@ -71,8 +71,8 @@ Playwright checks reference, intermediate, and narrow widths for responsive navi
 - `src/components/AppNavigation.vue`: navigation modes and menu state.
 - `src/views/HomeView.vue`: Overview entry and responsive layout for balances, pots, recent transactions, budgets, and recurring bills.
 - `src/components/BalanceSummary.vue`: Current Balance from the shared Pots store, plus supplied Income/Expenses from `src/data/demo.json`; none are transaction-derived totals.
-- `src/stores/pots.ts`: session-only copies of demo Pots and Current Balance, plus reactive Total Saved. Existing savings are already excluded from the initial Current Balance.
-- `src/views/PotsView.vue`: responsive read-only savings-goal browsing.
+- `src/stores/pots.ts`: session-only copies of demo Pots and Current Balance, plus reactive Total Saved and zero-savings pot creation. Existing savings are already excluded from the initial Current Balance.
+- `src/views/PotsView.vue`: responsive savings-goal browsing and the Add New Pot dialog.
 - `src/components/Base*.vue`: shared accessible controls.
 - `src/assets/main.css`: theme tokens, typography, and local font setup.
 - `src/assets/`: bundled local logos, icons, fonts (license retained), and avatars.

@@ -22,6 +22,170 @@ async function renderApp(path = '/') {
   return { screen, router }
 }
 
+it('creates an appended zero-savings pot, synchronizes Overview and resets a fresh app', async () => {
+  const { screen, router } = await renderApp('/pots')
+  await screen.get('header button').trigger('click')
+  const dialog = screen.get('[role="dialog"]')
+  expect(dialog.attributes('aria-labelledby')).toBeTruthy()
+  expect(dialog.findAll('input')).toHaveLength(2)
+  await dialog.get('input').setValue('  Rainy Days  ')
+  await dialog.get('input[inputmode="decimal"]').setValue('1234.56')
+  await dialog.get('form').trigger('submit')
+  expect(screen.find('[role="dialog"]').exists()).toBe(false)
+  expect(screen.findAll('article h2').map((heading) => heading.text())).toEqual([
+    'Savings',
+    'Concert Ticket',
+    'Gift',
+    'New Laptop',
+    'Holiday',
+    'Rainy Days',
+  ])
+  const last = screen.findAll('article')[5]!
+  const headingId = last.get('h2').attributes('id')
+  expect(last.get('dd').text()).toBe('$0.00')
+  expect(last.text()).toContain('Target of $1,234.56')
+  await router.push('/')
+  await flushPromises()
+  const summary = screen.get('section[aria-labelledby="pots-heading"]')
+  expect(summary.text()).toContain('Rainy Days$0')
+  expect(summary.text()).toContain('Total Saved$920')
+  expect(screen.get('[aria-label="Balance summaries"]').text()).toBe(
+    'Current Balance$4,836.00Income$3,814.25Expenses$1,700.50',
+  )
+  await router.push('/pots')
+  await flushPromises()
+  expect(screen.findAll('article h2')[5]!.attributes('id')).toBe(headingId)
+  const fresh = await renderApp('/pots')
+  expect(fresh.screen.findAll('article')).toHaveLength(5)
+})
+
+it('rejects invalid names and targets inline without mutation, then allows correction', async () => {
+  const { screen } = await renderApp('/pots')
+  await screen.get('header button').trigger('click')
+  const dialog = screen.get('[role="dialog"]')
+  const name = dialog.get('input')
+  const target = dialog.get('input[inputmode="decimal"]')
+  await target.setValue('100')
+  for (const value of ['', '   ', '  sAvInGs  ', 'x'.repeat(31)]) {
+    await name.setValue(value)
+    await dialog.get('form').trigger('submit')
+    expect(name.attributes('aria-invalid')).toBe('true')
+    expect(dialog.text()).toMatch(/Enter a name|already exists/)
+    expect(screen.findAll('article')).toHaveLength(5)
+  }
+  await name.setValue('x'.repeat(30))
+  for (const value of [
+    '',
+    '0',
+    '-1',
+    'abc',
+    'NaN',
+    'Infinity',
+    '1e309',
+    '1.001',
+    '90071992547409.92',
+    '90071992547409.91',
+  ]) {
+    await target.setValue(value)
+    await dialog.get('form').trigger('submit')
+    expect(target.attributes('aria-invalid')).toBe('true')
+    expect(dialog.text()).toContain('Enter an amount above $0 with up to 2 decimal places.')
+    expect(screen.find('[role="dialog"]').exists()).toBe(true)
+    expect(screen.findAll('article')).toHaveLength(5)
+  }
+  await target.setValue('0.01')
+  await dialog.get('form').trigger('submit')
+  expect(screen.find('[role="dialog"]').exists()).toBe(false)
+  expect(screen.findAll('article h2')[5]!.text()).toBe('x'.repeat(30))
+  expect(screen.findAll('article')[5]!.text()).toContain('Target of $0.01')
+  await screen.get('header button').trigger('click')
+  await screen.get('[role="dialog"] input').setValue('Z')
+  await screen.get('input[inputmode="decimal"]').setValue('12.34')
+  await screen.get('form').trigger('submit')
+  expect(screen.findAll('article h2')[6]!.text()).toBe('Z')
+})
+
+it('keeps pot colors independent of budgets and disables creation after exhausting the palette', async () => {
+  const { screen, router } = await renderApp('/pots')
+  const colors = [
+    'Red',
+    'Turquoise',
+    'Brown',
+    'Magenta',
+    'Blue',
+    'Grey',
+    'Army',
+    'Pink',
+    'Gold',
+    'Orange',
+  ]
+  for (const color of colors) {
+    await screen.get('header button').trigger('click')
+    const dialog = screen.get('[role="dialog"]')
+    const theme = dialog.get('[role="combobox"]')
+    expect(theme.text()).toBe(color)
+    await theme.trigger('click')
+    const options = dialog.findAll('[role="option"]')
+    expect(options).toHaveLength(15)
+    expect(
+      options.find((option) => option.text() === 'GreenAlready used')!.attributes('aria-disabled'),
+    ).toBe('true')
+    expect(options.find((option) => option.text() === color)!.attributes('aria-disabled')).toBe(
+      'false',
+    )
+    await theme.trigger('keydown', { key: 'Escape' })
+    await dialog.get('input').setValue(`Goal ${color}`)
+    await dialog.get('input[inputmode="decimal"]').setValue('20.01')
+    await dialog.get('form').trigger('submit')
+    expect(screen.find('[role="dialog"]').exists()).toBe(false)
+  }
+  const add = screen.get('header button')
+  expect(add.attributes('disabled')).toBeDefined()
+  expect(add.attributes('aria-label')).toBe('Add New Pot')
+  expect(add.attributes('aria-describedby')).toBeUndefined()
+  expect(screen.findAll('article')).toHaveLength(15)
+  await router.push('/budgets')
+  await flushPromises()
+  await screen.get('header button').trigger('click')
+  const selects = screen.findAll('[role="dialog"] [role="combobox"]')
+  await selects[1]!.trigger('click')
+  expect(
+    screen
+      .findAll('[role="option"]')
+      .find((option) => option.text() === 'Red')!
+      .attributes('aria-disabled'),
+  ).toBe('false')
+})
+
+it('discards Add drafts through close, Escape and backdrop while inside clicks preserve the form', async () => {
+  const { screen } = await renderApp('/pots')
+  for (const dismissal of ['close', 'escape', 'backdrop']) {
+    await screen.get('header button').trigger('click')
+    const dialog = screen.get('[role="dialog"]')
+    expect(dialog.get('input').element.value).toBe('')
+    expect(dialog.get<HTMLInputElement>('input[inputmode="decimal"]').element.value).toBe('')
+    expect(dialog.get('[role="combobox"]').text()).toBe('Red')
+    await dialog.get('input').setValue('Canceled goal')
+    await dialog.get('input[inputmode="decimal"]').setValue('50')
+    await dialog.get('h2').trigger('click')
+    expect(screen.find('[role="dialog"]').exists()).toBe(true)
+    await dialog.get('[role="combobox"]').trigger('click')
+    await dialog.get('[role="combobox"]').trigger('keydown', { key: 'Escape' })
+    expect(dialog.find('[role="listbox"]').exists()).toBe(false)
+    expect(screen.find('[role="dialog"]').exists()).toBe(true)
+    if (dismissal === 'close') await dialog.get('[aria-label="Close dialog"]').trigger('click')
+    else if (dismissal === 'escape') {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      await flushPromises()
+    } else {
+      dialog.element.parentElement!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    }
+    await flushPromises()
+    expect(screen.find('[role="dialog"]').exists()).toBe(false)
+    expect(screen.findAll('article')).toHaveLength(5)
+  }
+})
+
 it('shows zero, exact-target and over-target cents truthfully with capped accessible progress', async () => {
   demo.pots.splice(
     0,
@@ -108,7 +272,7 @@ it('opens Pots from Overview and navigation with original ordered finances and a
   expect(screen.get('article').text()).toContain('7.95%')
   expect(screen.get('article').text()).toContain('Target of $2,000.00')
   expect(
-    screen.findAll('main button').every((button) => button.attributes('disabled') !== undefined),
+    screen.findAll('article button').every((button) => button.attributes('disabled') !== undefined),
   ).toBe(true)
   await screen.get('nav a[aria-label="Overview"]').trigger('click')
   await flushPromises()
