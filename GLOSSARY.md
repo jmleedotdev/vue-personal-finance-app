@@ -4,6 +4,21 @@ Vocabulary for the personal finance app.
 
 ## Language
 
+**Budget**:
+A monthly spending limit for one transaction category. A category can have at most one budget; removing a budget does not remove its transactions.
+
+**Maximum Spend**:
+The positive amount allowed by a budget for a reporting month.
+
+**Spent**:
+The total outgoing transaction amount in a budget's category during the reporting month, including spending above its Maximum Spend.
+
+**Remaining**:
+The unspent portion of a budget's Maximum Spend, or zero when spending meets or exceeds that limit.
+
+**Latest Spending**:
+The most recent outgoing transactions in a budget's category, regardless of reporting month.
+
 **Pot**:
 A named savings goal with a target amount and an amount currently saved.
 
