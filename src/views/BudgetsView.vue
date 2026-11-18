@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { storeToRefs } from 'pinia'
 import BaseButton from '@/components/BaseButton.vue'
 import BaseModal from '@/components/BaseModal.vue'
@@ -13,6 +13,13 @@ const store = useBudgetsStore()
 const { categories, availableCategories, themeOptions, canAddBudget } = storeToRefs(store)
 const adding = ref(false)
 const heading = useTemplateRef('heading')
+const editingId = ref<string | null>(null)
+const editingBudget = computed(() => store.budgets.find((budget) => budget.id === editingId.value))
+const editCategories = computed(() => store.categoryOptions(editingId.value ?? undefined))
+const editThemes = computed(() => store.budgetThemeOptions(editingId.value ?? undefined))
+function saveBudget(budget: BudgetInput) {
+  if (editingId.value && store.updateBudget(editingId.value, budget)) editingId.value = null
+}
 
 function addBudget(budget: BudgetInput) {
   if (store.addBudget(budget)) adding.value = false
@@ -65,7 +72,12 @@ function addBudget(budget: BudgetInput) {
         </div>
       </section>
       <div v-if="categories.length" class="flex min-w-0 flex-col gap-6">
-        <BudgetCard v-for="budget in categories" :key="budget.id" :budget="budget" />
+        <BudgetCard
+          v-for="budget in categories"
+          :key="budget.id"
+          :budget="budget"
+          @edit="editingId = $event"
+        />
       </div>
       <section
         v-else
@@ -86,6 +98,19 @@ function addBudget(budget: BudgetInput) {
       @close="adding = false"
     >
       <BudgetForm :categories="availableCategories" :themes="themeOptions" @submit="addBudget" />
+    </BaseModal>
+    <BaseModal
+      v-if="editingBudget"
+      heading="Edit Budget"
+      description="As your budgets change, feel free to update your spending limits."
+      @close="editingId = null"
+    >
+      <BudgetForm
+        :initial-budget="editingBudget"
+        :categories="editCategories"
+        :themes="editThemes"
+        @submit="saveBudget"
+      />
     </BaseModal>
   </main>
 </template>

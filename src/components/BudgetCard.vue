@@ -1,11 +1,53 @@
 <script setup lang="ts">
+import { nextTick, onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 import { RouterLink } from 'vue-router'
+import IconEllipsis from '@/components/icons/IconEllipsis.vue'
 import IconCaretRight from '@/components/icons/IconCaretRight.vue'
 import { formatCurrency } from '@/utils/currency'
 import { formatCalendarDate } from '@/utils/formatting'
 import type { BudgetSpending } from '@/stores/budgets'
 
 const { budget } = defineProps<{ budget: BudgetSpending }>()
+const emit = defineEmits<{ edit: [id: string] }>()
+const menuOpen = ref(false)
+const menuRoot = useTemplateRef('menuRoot')
+const trigger = useTemplateRef('trigger')
+const editAction = useTemplateRef('editAction')
+
+async function openMenu() {
+  menuOpen.value = true
+  await nextTick()
+  editAction.value?.focus()
+}
+function closeMenu(restoreFocus = false) {
+  menuOpen.value = false
+  if (restoreFocus) trigger.value?.focus()
+}
+function onMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    closeMenu(true)
+  } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+    event.preventDefault()
+    void openMenu()
+  } else if (event.key === 'Tab') closeMenu()
+}
+function onOutsidePointer(event: PointerEvent) {
+  if (event.target instanceof Node && !menuRoot.value?.contains(event.target)) closeMenu()
+}
+function onFocusout(event: FocusEvent) {
+  if (!(event.relatedTarget instanceof Node && menuRoot.value?.contains(event.relatedTarget)))
+    closeMenu()
+}
+async function editBudget() {
+  closeMenu(true)
+  await nextTick()
+  emit('edit', budget.id)
+}
+onMounted(() => document.addEventListener('pointerdown', onOutsidePointer))
+onUnmounted(() => document.removeEventListener('pointerdown', onOutsidePointer))
+
 const avatarAssets = import.meta.glob<string>('@/assets/images/avatars/*.jpg', {
   eager: true,
   query: '?url',
@@ -18,14 +60,48 @@ const avatarAssets = import.meta.glob<string>('@/assets/images/avatars/*.jpg', {
     :aria-labelledby="`${budget.id}-heading`"
     class="min-w-0 rounded-xl bg-white px-5 py-6 md:p-8"
   >
-    <h2 :id="`${budget.id}-heading`" class="flex min-w-0 items-center gap-4 text-preset-2">
-      <span
-        aria-hidden="true"
-        class="size-4 shrink-0 rounded-full"
-        :style="{ backgroundColor: budget.theme }"
-      />
-      <span class="min-w-0 wrap-break-word">{{ budget.category }}</span>
-    </h2>
+    <header class="flex items-center justify-between gap-4">
+      <h2 :id="`${budget.id}-heading`" class="flex min-w-0 items-center gap-4 text-preset-2">
+        <span
+          aria-hidden="true"
+          class="size-4 shrink-0 rounded-full"
+          :style="{ backgroundColor: budget.theme }"
+        />
+        <span class="min-w-0 wrap-break-word">{{ budget.category }}</span>
+      </h2>
+      <div ref="menuRoot" class="relative shrink-0" @keydown="onMenuKeydown" @focusout="onFocusout">
+        <button
+          :id="`${budget.id}-menu-trigger`"
+          ref="trigger"
+          type="button"
+          :aria-label="`Manage ${budget.category} budget`"
+          aria-haspopup="menu"
+          :aria-expanded="menuOpen"
+          :aria-controls="menuOpen ? `${budget.id}-menu` : undefined"
+          class="flex size-8 items-center justify-center rounded-sm text-gray-500 hover:text-gray-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+          @click="menuOpen ? closeMenu() : openMenu()"
+        >
+          <IconEllipsis />
+        </button>
+        <div
+          v-if="menuOpen"
+          :id="`${budget.id}-menu`"
+          role="menu"
+          :aria-labelledby="`${budget.id}-menu-trigger`"
+          class="absolute top-full right-0 z-10 mt-2 w-max rounded-lg bg-white px-5 py-3 shadow-[0_4px_24px_0_#00000040]"
+        >
+          <button
+            ref="editAction"
+            type="button"
+            role="menuitem"
+            class="rounded-sm py-1 text-preset-4 hover:text-gray-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+            @click="editBudget"
+          >
+            Edit Budget
+          </button>
+        </div>
+      </div>
+    </header>
     <dl class="mt-5">
       <div class="flex flex-wrap gap-1 text-gray-500">
         <dt>Maximum Spend</dt>

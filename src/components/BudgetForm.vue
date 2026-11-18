@@ -6,16 +6,19 @@ import BaseSelect from '@/components/BaseSelect.vue'
 import type { BudgetInput } from '@/stores/budgets'
 import { formatCurrency } from '@/utils/currency'
 
-const { categories, themes } = defineProps<{
+const { categories, themes, initialBudget } = defineProps<{
+  initialBudget?: BudgetInput
   categories: readonly { label: string; value: string }[]
   themes: readonly { label: string; value: string; swatch: string; disabled: boolean }[]
 }>()
 const emit = defineEmits<{
   submit: [budget: BudgetInput]
 }>()
-const category = ref(categories[0]?.value ?? '')
-const maximum = ref('')
-const theme = ref(themes.find((option) => !option.disabled)?.value ?? '')
+const category = ref(initialBudget?.category ?? categories[0]?.value ?? '')
+const maximum = ref(initialBudget ? initialBudget.maximum.toFixed(2) : '')
+const theme = ref(
+  initialBudget?.theme.toUpperCase() ?? themes.find((option) => !option.disabled)?.value ?? '',
+)
 const amountError = ref('')
 const categoryError = ref('')
 const themeError = ref('')
@@ -72,6 +75,8 @@ function submit(event: Event) {
       <template #leading><span aria-hidden="true" class="text-beige-500">$</span></template>
     </BaseInput>
     <BaseSelect v-model="theme" label="Theme" :options="themes" :error="themeError" />
-    <BaseButton type="submit" class="mt-1 w-full">Add Budget</BaseButton>
+    <BaseButton type="submit" class="mt-1 w-full">{{
+      initialBudget ? 'Save Changes' : 'Add Budget'
+    }}</BaseButton>
   </form>
 </template>

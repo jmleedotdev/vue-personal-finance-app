@@ -26,6 +26,151 @@ async function renderApp(path = '/budgets') {
 }
 
 describe('Budgets', () => {
+  it('opens Edit from a named card menu, preloads saved values, and saves unchanged values', async () => {
+    const { screen } = await renderApp()
+    const trigger = screen.get('button[aria-label="Manage Entertainment budget"]')
+    await trigger.trigger('keydown', { key: 'ArrowDown' })
+    expect(trigger.attributes('aria-expanded')).toBe('true')
+    await screen.get('[role="menuitem"]').trigger('click')
+    expect(screen.find('[role="menu"]').exists()).toBe(false)
+    const dialog = screen.get('[role="dialog"]')
+    expect(dialog.get('h2').text()).toBe('Edit Budget')
+    expect(dialog.get('input').element.value).toBe('50.00')
+    expect(dialog.findAll('[role="combobox"]').map((select) => select.text())).toEqual([
+      'Entertainment',
+      'Green',
+    ])
+    expect(dialog.get('button[type="submit"]').text()).toBe('Save Changes')
+    await dialog.get('form').trigger('submit')
+    expect(screen.find('[role="dialog"]').exists()).toBe(false)
+    expect(screen.findAll('article h2').map((heading) => heading.text())).toEqual([
+      'Entertainment',
+      'Bills',
+      'Dining Out',
+      'Personal Care',
+    ])
+    expect(screen.get('article dd').text()).toBe('$50.00')
+  })
+
+  it('edits category, limit and theme in place, recalculates history, releases assignments and synchronizes Overview', async () => {
+    const { screen, router } = await renderApp()
+    const originalCard = screen.get('article').element
+    const transactions = structuredClone(demo.transactions)
+    await screen.get('button[aria-label="Manage Entertainment budget"]').trigger('click')
+    await screen.get('[role="menuitem"]').trigger('click')
+    await flushPromises()
+    const dialog = screen.get('[role="dialog"]')
+    const selectors = dialog.findAll('[role="combobox"]')
+    await selectors[0]!.trigger('click')
+    expect(dialog.findAll('[role="option"]').map((option) => option.text())).toEqual([
+      'Education',
+      'Entertainment',
+      'General',
+      'Groceries',
+      'Lifestyle',
+      'Shopping',
+      'Transportation',
+    ])
+    await dialog
+      .findAll('[role="option"]')
+      .find((option) => option.text() === 'Education')!
+      .trigger('click')
+    await selectors[1]!.trigger('click')
+    const options = dialog.findAll('[role="option"]')
+    expect(options[0]!.attributes('aria-disabled')).toBe('false')
+    expect(
+      options.slice(1, 4).every((option) => option.attributes('aria-disabled') === 'true'),
+    ).toBe(true)
+    await options.find((option) => option.text() === 'Purple')!.trigger('click')
+    await dialog.get('input').setValue('123.45')
+    await dialog.get('form').trigger('submit')
+    const card = screen.get('article')
+    expect(card.element).toBe(originalCard)
+    expect(screen.findAll('article h2').map((heading) => heading.text())).toEqual([
+      'Education',
+      'Bills',
+      'Dining Out',
+      'Personal Care',
+    ])
+    expect(card.findAll('dd').map((amount) => amount.text())).toEqual([
+      '$123.45',
+      '$50.00',
+      '$73.45',
+    ])
+    expect(card.get('[role="progressbar"]').attributes('aria-valuetext')).toBe(
+      '$50.00 spent of $123.45',
+    )
+    expect(card.findAll('li').map((row) => row.get('p').text())).toEqual([
+      'Elevate Education',
+      'Elevate Education',
+    ])
+    expect(card.get('a').attributes('href')).toBe('/transactions?category=Education')
+    expect(screen.get('[aria-label="Budget categories"] li').text()).toBe(
+      'Education$50.00of $123.45',
+    )
+    expect(screen.get('[role="img"]').attributes('aria-label')).toBe(
+      'August 2024 budget spending: $373 spent of $1,048 limit.',
+    )
+    await screen.get('button[aria-label="Add New Budget"]').trigger('click')
+    const add = screen.get('[role="dialog"]')
+    await add.get('[role="combobox"]').trigger('click')
+    expect(add.findAll('[role="option"]').map((option) => option.text())).toContain('Entertainment')
+    expect(add.findAll('[role="option"]').map((option) => option.text())).not.toContain('Education')
+    await add.get('[role="combobox"]').trigger('keydown', { key: 'Escape' })
+    await add.findAll('[role="combobox"]')[1]!.trigger('click')
+    expect(add.findAll('[role="option"]')[0]!.attributes('aria-disabled')).toBe('false')
+    expect(
+      add
+        .findAll('[role="option"]')
+        .find((option) => option.text() === 'PurpleAlready used')!
+        .attributes('aria-disabled'),
+    ).toBe('true')
+    await add.get('button[aria-label="Close dialog"]').trigger('click')
+    await router.push('/')
+    await flushPromises()
+    expect(screen.get('section[aria-labelledby="budgets-heading"]').text()).toContain('Education')
+    expect(screen.get('[role="img"]').attributes('aria-label')).toBe(
+      'August 2024 budget spending: $373 spent of $1,048 limit.',
+    )
+    await router.push('/budgets')
+    await flushPromises()
+    expect(screen.get('article h2').text()).toBe('Education')
+    await screen.get('article a').trigger('click')
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe('/transactions'))
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Elevate Education',
+      'Elevate Education',
+    ])
+    expect(demo.transactions).toEqual(transactions)
+    expect(demo.budgets).toEqual(originalBudgets)
+  })
+
+  it.each(['', '0', '-1', 'hello', 'Infinity', '1.001', '90071992547409.92'])(
+    'retains the Edit draft for invalid amount %j and discards cancellation',
+    async (amount) => {
+      const { screen } = await renderApp()
+      async function openEdit() {
+        await screen.get('button[aria-label="Manage Entertainment budget"]').trigger('click')
+        await screen.get('[role="menuitem"]').trigger('click')
+        await flushPromises()
+        return screen.get('[role="dialog"]')
+      }
+      const dialog = await openEdit()
+      await dialog.get('input').setValue(amount)
+      await dialog.get('form').trigger('submit')
+      expect(dialog.get('input').element.value).toBe(amount)
+      expect(dialog.get('input').attributes('aria-invalid')).toBe('true')
+      expect(screen.get('article dd').text()).toBe('$50.00')
+      await dialog.get('button[aria-label="Close dialog"]').trigger('click')
+      const reopened = await openEdit()
+      expect(reopened.get('input').element.value).toBe('50.00')
+      expect(reopened.get('input').attributes('aria-invalid')).toBeUndefined()
+      await reopened.get('input').setValue('60.25')
+      await reopened.get('form').trigger('submit')
+      expect(screen.get('article dd').text()).toBe('$60.25')
+    },
+  )
+
   it('adds a fresh budget once, appends its card, and synchronizes Overview through navigation', async () => {
     const { screen, router } = await renderApp()
     await screen.get('button[aria-label="Add New Budget"]').trigger('click')
@@ -477,7 +622,7 @@ describe('Budgets', () => {
     expect(
       screen.findAll('[role="progressbar"]').map((bar) => bar.attributes('aria-valuenow')),
     ).toEqual(['30', '20', '100', '40'])
-    expect(screen.findAll('article button')).toHaveLength(0)
+    expect(screen.findAll('article button[aria-haspopup="menu"]')).toHaveLength(4)
     expect(screen.get('nav button[aria-label="Pots"]').attributes('disabled')).toBeDefined()
     await screen.get('nav a[aria-label="Overview"]').trigger('click')
     await flushPromises()
