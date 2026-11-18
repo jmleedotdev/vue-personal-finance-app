@@ -11,6 +11,7 @@ import TransactionPagination from '@/components/TransactionPagination.vue'
 import demo from '@/data/demo.json'
 import { formatCurrency } from '@/utils/currency'
 import { formatCalendarDate } from '@/utils/formatting'
+import { sortOptions } from '@/utils/sortOptions'
 
 const avatarAssets = import.meta.glob<string>('@/assets/images/avatars/*.jpg', {
   eager: true,
@@ -22,11 +23,6 @@ const transactions = demo.transactions.map((transaction, index) => ({
   index,
   calendarDate: new Date(transaction.date).toISOString().slice(0, 10),
 }))
-const sortOptions = ['Latest', 'Oldest', 'A to Z', 'Z to A', 'Highest', 'Lowest'].map((label) => ({
-  value: label,
-  label,
-}))
-
 const route = useRoute()
 const router = useRouter()
 const pageSize = 10

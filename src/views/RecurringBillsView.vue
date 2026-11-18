@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import BaseSelect from '@/components/BaseSelect.vue'
+import IconSort from '@/components/icons/IconSort.vue'
+import { sortOptions } from '@/utils/sortOptions'
 import demo from '@/data/demo.json'
 import { formatCurrency } from '@/utils/currency'
 import { REPORTING_DATE, summarizeRecurringBills } from '@/utils/recurringBills'
@@ -7,8 +12,48 @@ import paidIcon from '@/assets/icons/bill-paid.svg'
 import dueIcon from '@/assets/icons/bill-due.svg'
 
 const totals = summarizeRecurringBills(demo.transactions, REPORTING_DATE)
-// Stable sorting retains the supplied payee order for equal due dates.
-const bills = [...totals.bills].sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+const route = useRoute()
+const router = useRouter()
+const sort = computed(() =>
+  sortOptions.some((option) => option.value === route.query.sort)
+    ? String(route.query.sort)
+    : 'Oldest',
+)
+watch(
+  () => route.query,
+  (query) => {
+    const normalizedSort = sort.value === 'Oldest' ? undefined : sort.value
+    if (query.sort !== normalizedSort) {
+      void router.replace({ query: { ...query, sort: normalizedSort } })
+    }
+  },
+  { immediate: true },
+)
+
+async function changeSort(value: string) {
+  await router.push({
+    query: { ...route.query, sort: value === 'Oldest' ? undefined : value, page: undefined },
+  })
+}
+
+const bills = computed(() =>
+  [...totals.bills].sort((a, b) => {
+    switch (sort.value) {
+      case 'Latest':
+        return b.dueDate.localeCompare(a.dueDate)
+      case 'A to Z':
+        return a.name.localeCompare(b.name)
+      case 'Z to A':
+        return b.name.localeCompare(a.name)
+      case 'Highest':
+        return b.amount - a.amount
+      case 'Lowest':
+        return a.amount - b.amount
+      default:
+        return a.dueDate.localeCompare(b.dueDate)
+    }
+  }),
+)
 const summaries = [
   { label: 'Paid Bills', count: totals.paidCount, amount: totals.paid },
   { label: 'Total Upcoming', count: totals.upcomingCount, amount: totals.upcoming },
@@ -71,9 +116,24 @@ function ordinal(day: number) {
         aria-label="Monthly recurring bills"
         class="min-w-0 rounded-xl bg-white px-5 py-6 md:p-8"
       >
+        <div class="mb-6 flex justify-end">
+          <BaseSelect
+            inline
+            label="Sort by"
+            aria-label="Sort bills"
+            :model-value="sort"
+            :options="sortOptions"
+            @update:model-value="changeSort"
+          >
+            <template #icon><IconSort /></template>
+          </BaseSelect>
+        </div>
         <table v-if="bills.length" class="block w-full md:table">
           <caption class="sr-only">
-            Monthly recurring bills in ascending due-date order
+            Monthly recurring bills, sorted by
+            {{
+              sort
+            }}
           </caption>
           <thead class="sr-only md:not-sr-only md:table-header-group">
             <tr class="border-b border-gray-100 text-left text-preset-5 text-gray-500">

@@ -16,13 +16,181 @@ afterEach(() => {
 async function renderApp(path = '/recurring-bills') {
   const router = createRouter({ history: createMemoryHistory(), routes })
   await router.push(path)
-  const screen = mount(App, { global: { plugins: [router] } })
+  const screen = mount(App, { attachTo: document.body, global: { plugins: [router] } })
   screens.push(screen)
   await flushPromises()
   return { screen, router }
 }
 
+async function chooseSort(screen: ReturnType<typeof mount>, value: string) {
+  await screen.get('[aria-label="Sort bills"]').trigger('click')
+  await screen
+    .findAll('[role="option"]')
+    .find((option) => option.text() === value)!
+    .trigger('click')
+  await flushPromises()
+}
+
 describe('Recurring Bills', () => {
+  it('pushes sort changes, drops page constraints, restores history and reloads without leaking into Transactions', async () => {
+    const { screen, router } = await renderApp('/recurring-bills?search=applied&other=keep&page=4')
+    const names = () => screen.findAll('tbody th').map((row) => row.text())
+    await chooseSort(screen, 'Highest')
+    expect(router.currentRoute.value.query).toEqual({
+      search: 'applied',
+      other: 'keep',
+      sort: 'Highest',
+    })
+    expect(names()).toEqual([
+      'Spark Electric Solutions',
+      'Aqua Flow Utilities',
+      'Elevate Education',
+      'ByteWise',
+      'EcoFuel Energy',
+      'Serenity Spa & Wellness',
+      'Pixel Playground',
+      'Nimbus Data Storage',
+    ])
+    await chooseSort(screen, 'Oldest')
+    expect(router.currentRoute.value.query).toEqual({ search: 'applied', other: 'keep' })
+    // Selecting the already applied option must not create another history entry.
+    await chooseSort(screen, 'Oldest')
+    router.back()
+    await flushPromises()
+    expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Highest')
+    expect(names().slice(0, 2)).toEqual(['Spark Electric Solutions', 'Aqua Flow Utilities'])
+    router.back()
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ search: 'applied', other: 'keep', page: '4' })
+    expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
+    router.forward()
+    await flushPromises()
+    expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Highest')
+    const reloaded = await renderApp(router.currentRoute.value.fullPath)
+    expect(reloaded.screen.get('[aria-label="Sort bills"]').text()).toContain('Highest')
+    expect(reloaded.screen.findAll('tbody th').map((row) => row.text())).toEqual(names())
+    await router.push('/transactions')
+    await flushPromises()
+    expect(screen.get('[aria-label="Sort transactions"]').text()).toContain('Latest')
+    expect(screen.get('input').element.value).toBe('')
+    await router.push('/recurring-bills')
+    await flushPromises()
+    expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
+  })
+
+  it('offers the shared menu order and retains keyboard focus, selection and dismissal behavior', async () => {
+    const { screen, router } = await renderApp()
+    const control = screen.get('[aria-label="Sort bills"]')
+    ;(control.element as HTMLButtonElement).focus()
+    await control.trigger('keydown', { key: 'Enter' })
+    expect(screen.findAll('[role="option"]').map((option) => option.text())).toEqual([
+      'Latest',
+      'Oldest',
+      'A to Z',
+      'Z to A',
+      'Highest',
+      'Lowest',
+    ])
+    expect(screen.get('[role="option"][aria-selected="true"]').text()).toBe('Oldest')
+    await control.trigger('keydown', { key: 'End' })
+    await control.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(router.currentRoute.value.query).toEqual({ sort: 'Lowest' })
+    expect(document.activeElement).toBe(control.element)
+    expect(screen.find('[role="listbox"]').exists()).toBe(false)
+    await control.trigger('keydown', { key: 'Enter' })
+    expect(screen.get('[role="option"][aria-selected="true"]').text()).toBe('Lowest')
+    await control.trigger('keydown', { key: 'Home' })
+    await control.trigger('keydown', { key: 'Escape' })
+    expect(router.currentRoute.value.query).toEqual({ sort: 'Lowest' })
+    expect(document.activeElement).toBe(control.element)
+    await control.trigger('click')
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await flushPromises()
+    expect(screen.find('[role="listbox"]').exists()).toBe(false)
+    expect(router.currentRoute.value.query).toEqual({ sort: 'Lowest' })
+  })
+
+  it.each([
+    'sort=Oldest',
+    'sort=nope',
+    'sort=',
+    'sort',
+    'sort=Highest&sort=Lowest',
+    'sort=highest',
+    'sort=%20Latest%20',
+  ])(
+    'normalizes malformed or redundant sort state without losing unrelated query parameters: %s',
+    async (query) => {
+      const { screen, router } = await renderApp(
+        `/recurring-bills?${query}&search=keep&other=one&other=two&page=3`,
+      )
+      expect(router.currentRoute.value.query).toEqual({
+        search: 'keep',
+        other: ['one', 'two'],
+        page: '3',
+      })
+      expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
+      expect(screen.get('tbody th').text()).toBe('Spark Electric Solutions')
+      // Normalization replaces the entry rather than adding a history stop.
+      await chooseSort(screen, 'Latest')
+      router.back()
+      await flushPromises()
+      expect(router.currentRoute.value.query).toEqual({
+        search: 'keep',
+        other: ['one', 'two'],
+        page: '3',
+      })
+    },
+  )
+
+  it.each([
+    ['Latest', ['Alpha', 'Delta', 'Beta', 'Zulu']],
+    ['Oldest', ['Beta', 'Zulu', 'Delta', 'Alpha']],
+    ['A to Z', ['Alpha', 'Beta', 'Delta', 'Zulu']],
+    ['Z to A', ['Zulu', 'Delta', 'Beta', 'Alpha']],
+    ['Highest', ['Alpha', 'Delta', 'Beta', 'Zulu']],
+    ['Lowest', ['Beta', 'Zulu', 'Delta', 'Alpha']],
+  ])(
+    'sorts by %s using due dates, positive amounts and stable supplied-order ties',
+    async (sort, expected) => {
+      demo.transactions.splice(
+        0,
+        demo.transactions.length,
+        ...[
+          { name: 'Beta', amount: -10, date: '2024-08-02T01:00:00Z' },
+          { name: 'Alpha', amount: -100, date: '2024-07-28T23:00:00Z' },
+          { name: 'Zulu', amount: -10, date: '2024-06-02T12:00:00Z' },
+          { name: 'Delta', amount: -50, date: '2024-08-15T12:00:00Z' },
+        ].map((entry) => ({ ...original[0]!, recurring: true, ...entry })),
+      )
+      const { screen } = await renderApp(`/recurring-bills?sort=${encodeURIComponent(sort)}`)
+      expect(screen.findAll('tbody th').map((row) => row.text())).toEqual(expected)
+      expect(screen.get('[aria-label="Sort bills"]').text()).toContain(sort)
+      expect(screen.get('section[aria-labelledby="total-bills-heading"] dd').text()).toBe('$170.00')
+      expect(
+        screen.findAll('section[aria-labelledby="bill-summary-heading"] dd').map((dd) => dd.text()),
+      ).toEqual(['2 ($60.00)', '2 ($110.00)', '1 ($10.00)'])
+      expect(
+        screen
+          .findAll('tbody tr')
+          .map(
+            (row) => `${row.get('th').text()}|${row.get('[role="img"]').attributes('aria-label')}`,
+          ),
+      ).toEqual(
+        expected.map(
+          (name) =>
+            ({
+              Alpha: 'Alpha|Upcoming',
+              Beta: 'Beta|Paid',
+              Zulu: 'Zulu|Due Soon',
+              Delta: 'Delta|Paid',
+            })[name],
+        ),
+      )
+    },
+  )
+
   it.each(['navigation', 'See Details'])(
     'opens the default page from %s with current navigation',
     async (entry) => {
@@ -227,6 +395,7 @@ describe('Recurring Bills', () => {
       '$35.00',
       '$100.00',
     ])
-    expect(screen.find('input, [role="combobox"]').exists()).toBe(false)
+    expect(screen.find('input').exists()).toBe(false)
+    expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
   })
 })
