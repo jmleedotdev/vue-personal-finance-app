@@ -1,6 +1,6 @@
 # Recurring Bills Page
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -227,3 +227,11 @@ Paginate matching bills in groups of ten, hiding pagination whenever the results
 - Private references are indexed locally in `.scratch/references.local.md`. Original desktop, tablet, and mobile screenshots are cached under `.scratch/design.local/` as `recurring-bills-desktop.png`, `recurring-bills-tablet.png`, and `recurring-bills-mobile.png`. Keep the index and screenshots ignored; transfer them separately when continuing in another checkout.
 - The tablet and mobile references were fetched at native frame resolution and their PNG dimensions verified. Retrieve additional detailed design context only when needed, and inspect existing shared controls before adding any variant.
 - This spec publishes the agreed feature for implementation; no implementation is included in this specification step.
+
+## Comments
+
+### Status reconciliation
+
+- All four implementation issues are resolved with completed acceptance criteria. The current implementation includes both entry points, shared fixed-date bill derivation and summaries, accessible statuses, submitted payee search, all six sorts, and shared URL-backed pagination. Later tickets complete the conditional search/sort/page integration and larger-history validation recorded in earlier tickets.
+- Fresh validation: `pnpm check` passes (lint, type-checking, 145 Vitest tests, 8 commit-hook tests, and production build). All 87 Chromium checks pass against the production preview, including Overview and Transactions regressions, responsive controls, focus/scroll behavior, and combined URL/history journeys.
+- Changed the stale parent-spec status to `resolved`. This reconciliation uses implementation inspection, completed issue records, prior review/visual-validation evidence, and fresh automated checks; it does not claim a new private-reference visual review.

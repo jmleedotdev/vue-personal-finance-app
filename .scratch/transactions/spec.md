@@ -1,6 +1,6 @@
 # Responsive Transactions Page
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -198,3 +198,11 @@ Use one consistent dataset and browsing state across responsive layouts. Keep ap
 - Consult cached references before fetching again. For a refresh, request a maximum dimension at least as large as the frame's longest edge to avoid default downscaling.
 - The shared local references also cover Overview, Recurring Bills, and dropdown controls. They are Git-ignored and must be transferred separately when continuing in another checkout.
 - Never commit or copy private design URLs, file keys, or screenshots into tracked documentation, source comments, issues, tests, or public PR descriptions. Local paths and frame dimensions may be documented without exposing the private sources.
+
+## Comments
+
+### Status reconciliation
+
+- All four implementation issues are resolved with completed acceptance criteria. The current implementation includes both entry points, route-derived navigation, submitted name search, category filtering, all six stable sorts, URL-backed pagination, and combined refresh/history restoration.
+- Fresh validation: `pnpm check` passes (lint, type-checking, 145 Vitest tests, 8 commit-hook tests, and production build). All 87 Chromium checks pass against the production preview, including Overview and Transactions regressions, responsive controls, focus/scroll behavior, and combined URL/history journeys.
+- Changed the stale parent-spec status to `resolved`. This reconciliation uses implementation inspection, completed issue records, prior review/visual-validation evidence, and fresh automated checks; it does not claim a new private-reference visual review.
