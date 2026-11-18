@@ -7,7 +7,7 @@ import IconSearch from '@/components/icons/IconSearch.vue'
 import IconSort from '@/components/icons/IconSort.vue'
 import IconFilter from '@/components/icons/IconFilter.vue'
 import { useRoute, useRouter } from 'vue-router'
-import TransactionPagination from '@/components/TransactionPagination.vue'
+import BasePagination from '@/components/BasePagination.vue'
 import demo from '@/data/demo.json'
 import { formatCurrency } from '@/utils/currency'
 import { formatCalendarDate } from '@/utils/formatting'
@@ -264,7 +264,12 @@ async function changePage(nextPage: number) {
           </tr>
         </tbody>
       </table>
-      <TransactionPagination :page="page" :page-count="pageCount" @change="changePage" />
+      <BasePagination
+        label="Transaction pages"
+        :page="page"
+        :page-count="pageCount"
+        @change="changePage"
+      />
     </section>
   </main>
 </template>

@@ -31,13 +31,246 @@ async function chooseSort(screen: ReturnType<typeof mount>, value: string) {
   await flushPromises()
 }
 
+function supplyBills(count = 23) {
+  demo.transactions.splice(
+    0,
+    demo.transactions.length,
+    ...Array.from({ length: count }, (_, i) => ({
+      ...original[0]!,
+      name: `Bill ${String(i + 1).padStart(2, '0')}`,
+      recurring: true,
+      amount: -(i + 1),
+      date: `2024-07-${String((i % 28) + 1).padStart(2, '0')}T12:00:00Z`,
+    })),
+  )
+  // Older payments must not become additional rows or consume page slots.
+  demo.transactions.push({ ...demo.transactions[0]!, date: '2024-06-01T12:00:00Z' })
+}
+
+const firstTen = [
+  'Bill 01',
+  'Bill 02',
+  'Bill 03',
+  'Bill 04',
+  'Bill 05',
+  'Bill 06',
+  'Bill 07',
+  'Bill 08',
+  'Bill 09',
+  'Bill 10',
+]
+const secondTen = [
+  'Bill 11',
+  'Bill 12',
+  'Bill 13',
+  'Bill 14',
+  'Bill 15',
+  'Bill 16',
+  'Bill 17',
+  'Bill 18',
+  'Bill 19',
+  'Bill 20',
+]
+
 describe('Recurring Bills', () => {
+  it('pages distinct matching bills with numbered, Next and Previous controls and heading focus', async () => {
+    supplyBills()
+    const { screen, router } = await renderApp()
+    const names = () => screen.findAll('tbody th').map((row) => row.text())
+    const nav = () => screen.get('nav[aria-label="Bill pages"]')
+    const click = async (label: string) => {
+      await nav().get(`button[aria-label="${label}"]`).trigger('click')
+      await flushPromises()
+    }
+    expect(names()).toEqual(firstTen)
+    expect(nav().get('[aria-label="Previous page"]').attributes('disabled')).toBeDefined()
+    expect(nav().get('[aria-current="page"]').attributes('aria-label')).toBe('Page 1')
+    await click('Next page')
+    expect(names()).toEqual(secondTen)
+    expect(router.currentRoute.value.query).toEqual({ page: '2' })
+    expect(document.activeElement).toBe(screen.get('h1').element)
+    await click('Page 3')
+    expect(names()).toEqual(['Bill 21', 'Bill 22', 'Bill 23'])
+    expect(nav().get('[aria-label="Next page"]').attributes('disabled')).toBeDefined()
+    expect(nav().get('[aria-current="page"]').attributes('aria-label')).toBe('Page 3')
+    await click('Previous page')
+    expect(names()).toEqual(secondTen)
+    await click('Page 1')
+    expect(names()).toEqual(firstTen)
+    expect(router.currentRoute.value.query).toEqual({})
+    expect(screen.get('section[aria-labelledby="total-bills-heading"] dd').text()).toBe('$276.00')
+  })
+  it.each([0, 8, 10, 11])(
+    'shows pagination only above ten matching distinct bills: %i',
+    async (count) => {
+      supplyBills(11)
+      if (count < 11) demo.transactions.splice(count, demo.transactions.length - count)
+      demo.transactions.push({
+        ...original[0]!,
+        name: 'Unmatched obligation',
+        recurring: true,
+        amount: -1,
+      })
+      const { screen } = await renderApp('/recurring-bills?search=Bill')
+      expect(screen.findAll('tbody tr')).toHaveLength(Math.min(count, 10))
+      expect(screen.find('nav[aria-label="Bill pages"]').exists()).toBe(count === 11)
+    },
+  )
+
+  it('makes the eleventh matching bill reachable and identifies the final page', async () => {
+    supplyBills(11)
+    const { screen } = await renderApp('/recurring-bills?search=Bill')
+    expect(screen.get('[aria-label="Previous page"]').attributes('disabled')).toBeDefined()
+    expect(screen.get('[aria-label="Next page"]').attributes('disabled')).toBeUndefined()
+    expect(screen.get('button[aria-current="page"]').attributes('aria-label')).toBe('Page 1')
+    await screen.get('[aria-label="Next page"]').trigger('click')
+    await flushPromises()
+    expect(screen.findAll('tbody th').map((row) => row.text())).toEqual(['Bill 11'])
+    expect(screen.get('button[aria-current="page"]').attributes('aria-label')).toBe('Page 2')
+    expect(screen.get('[aria-label="Next page"]').attributes('disabled')).toBeDefined()
+  })
+
+  it.each([
+    ['page=0', undefined],
+    ['page=-1', undefined],
+    ['page=1.5', undefined],
+    ['page=abc', undefined],
+    ['page=01', undefined],
+    ['page=+2', undefined],
+    ['page=', undefined],
+    ['page', undefined],
+    ['page=2&page=3', undefined],
+    ['page=1', undefined],
+    ['page=999', '3'],
+    ['page=2', '2'],
+  ])(
+    'normalizes page state without adding history or losing unrelated query values: %s',
+    async (query, expectedPage) => {
+      supplyBills()
+      const { screen, router } = await renderApp(`/recurring-bills?${query}&other=one&other=two`)
+      expect(router.currentRoute.value.query).toEqual({
+        other: ['one', 'two'],
+        ...(expectedPage ? { page: expectedPage } : {}),
+      })
+      expect(screen.findAll('tbody th').map((row) => row.text())).toEqual(
+        expectedPage === '3'
+          ? ['Bill 21', 'Bill 22', 'Bill 23']
+          : expectedPage === '2'
+            ? secondTen
+            : firstTen,
+      )
+      await chooseSort(screen, 'Latest')
+      router.back()
+      await flushPromises()
+      expect(router.currentRoute.value.query.page).toBe(expectedPage)
+      expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
+    },
+  )
+
+  it('restores combined search, sort and pages, discards drafts, and resets through real controls', async () => {
+    supplyBills()
+    demo.transactions.push({
+      ...original[0]!,
+      name: 'Other obligation',
+      recurring: true,
+      amount: -1000,
+      date: '2024-07-01T12:00:00Z',
+    })
+    const { screen, router } = await renderApp(
+      '/recurring-bills?search=%20bILL%20&sort=Highest&page=2&other=keep',
+    )
+    const names = () => screen.findAll('tbody th').map((row) => row.text())
+    const descendingFirst = [
+      'Bill 23',
+      'Bill 22',
+      'Bill 21',
+      'Bill 20',
+      'Bill 19',
+      'Bill 18',
+      'Bill 17',
+      'Bill 16',
+      'Bill 15',
+      'Bill 14',
+    ]
+    expect(names()).toEqual([
+      'Bill 13',
+      'Bill 12',
+      'Bill 11',
+      'Bill 10',
+      'Bill 09',
+      'Bill 08',
+      'Bill 07',
+      'Bill 06',
+      'Bill 05',
+      'Bill 04',
+    ])
+    expect(screen.get('input').element.value).toBe('bILL')
+    await screen.get('input').setValue('Other')
+    await screen.get('[aria-label="Next page"]').trigger('click')
+    await flushPromises()
+    expect(names()).toEqual(['Bill 03', 'Bill 02', 'Bill 01'])
+    expect(router.currentRoute.value.query).toEqual({
+      search: 'bILL',
+      sort: 'Highest',
+      page: '3',
+      other: 'keep',
+    })
+    const reloaded = await renderApp(router.currentRoute.value.fullPath)
+    expect(reloaded.screen.findAll('tbody th').map((row) => row.text())).toEqual([
+      'Bill 03',
+      'Bill 02',
+      'Bill 01',
+    ])
+    await screen.get('input').setValue('discard')
+    router.back()
+    await flushPromises()
+    expect(screen.get('input').element.value).toBe('bILL')
+    expect(router.currentRoute.value.query.page).toBe('2')
+    router.forward()
+    await flushPromises()
+    expect(names()).toEqual(['Bill 03', 'Bill 02', 'Bill 01'])
+    await screen.get('input').setValue('  Bill  ')
+    ;(screen.get('input').element as HTMLInputElement).focus()
+    await screen.get('form').trigger('submit')
+    await flushPromises()
+    expect(names()).toEqual(descendingFirst)
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+    expect(document.activeElement).toBe(screen.get('input').element)
+    await screen.get('[aria-label="Page 3"]').trigger('click')
+    await flushPromises()
+    await screen.get('input').setValue('unsubmitted')
+    await chooseSort(screen, 'A to Z')
+    expect(names()).toEqual(firstTen)
+    expect(router.currentRoute.value.query).toEqual({
+      search: 'Bill',
+      sort: 'A to Z',
+      other: 'keep',
+    })
+    await screen.get('[aria-label="Page 2"]').trigger('click')
+    await flushPromises()
+    await screen.get('input').setValue('no match')
+    await screen.get('form').trigger('submit')
+    await flushPromises()
+    expect(screen.find('tbody').exists()).toBe(false)
+    expect(screen.text()).toContain('No bills found')
+    expect(screen.find('nav[aria-label="Bill pages"]').exists()).toBe(false)
+    expect(router.currentRoute.value.query.page).toBeUndefined()
+    await screen.get('input').setValue('')
+    await screen.get('form').trigger('submit')
+    await flushPromises()
+    expect(names()).toEqual(firstTen)
+    expect(screen.get('section[aria-labelledby="total-bills-heading"] dd').text()).toBe('$1,276.00')
+    expect(
+      screen.findAll('section[aria-labelledby="bill-summary-heading"] dd').map((dd) => dd.text()),
+    ).toEqual(['0 ($0.00)', '24 ($1,276.00)', '24 ($1,276.00)'])
+  })
+
   it('keeps typing as a draft and submits a trimmed partial payee search without changing reporting summaries', async () => {
     const { screen, router } = await renderApp('/recurring-bills?sort=Highest&page=4&other=keep')
     const input = screen.get('input[aria-label="Search bills"]')
     await input.setValue('  eLeC  ')
     expect(screen.findAll('tbody tr')).toHaveLength(8)
-    expect(router.currentRoute.value.query).toEqual({ sort: 'Highest', page: '4', other: 'keep' })
+    expect(router.currentRoute.value.query).toEqual({ sort: 'Highest', other: 'keep' })
     await screen.get('form[role="search"]').trigger('submit')
     await flushPromises()
     expect(router.currentRoute.value.query).toEqual({
@@ -145,7 +378,6 @@ describe('Recurring Bills', () => {
         ...(applied ? { search: applied } : {}),
         sort: 'Lowest',
         other: ['one', 'two'],
-        page: '3',
       })
       expect(screen.get('input').element.value).toBe(applied)
       expect(screen.findAll('tbody th').map((row) => row.text())).toEqual(
@@ -166,7 +398,7 @@ describe('Recurring Bills', () => {
       router.back()
       await flushPromises()
       expect(screen.get('input').element.value).toBe(applied)
-      expect(router.currentRoute.value.query.page).toBe('3')
+      expect(router.currentRoute.value.query.page).toBeUndefined()
       expect(router.currentRoute.value.query.other).toEqual(['one', 'two'])
     },
   )
@@ -200,7 +432,7 @@ describe('Recurring Bills', () => {
     expect(names().slice(0, 2)).toEqual(['Spark Electric Solutions', 'Aqua Flow Utilities'])
     router.back()
     await flushPromises()
-    expect(router.currentRoute.value.query).toEqual({ search: 'e', other: 'keep', page: '4' })
+    expect(router.currentRoute.value.query).toEqual({ search: 'e', other: 'keep' })
     expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
     router.forward()
     await flushPromises()
@@ -267,7 +499,6 @@ describe('Recurring Bills', () => {
       expect(router.currentRoute.value.query).toEqual({
         search: 'e',
         other: ['one', 'two'],
-        page: '3',
       })
       expect(screen.get('[aria-label="Sort bills"]').text()).toContain('Oldest')
       expect(screen.get('tbody th').text()).toBe('Spark Electric Solutions')
@@ -278,7 +509,6 @@ describe('Recurring Bills', () => {
       expect(router.currentRoute.value.query).toEqual({
         search: 'e',
         other: ['one', 'two'],
-        page: '3',
       })
     },
   )

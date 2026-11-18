@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import BasePagination from '@/components/BasePagination.vue'
 import { useRoute, useRouter } from 'vue-router'
 import BaseSelect from '@/components/BaseSelect.vue'
 import BaseInput from '@/components/BaseInput.vue'
@@ -26,20 +27,6 @@ const sort = computed(() =>
     ? String(route.query.sort)
     : 'Oldest',
 )
-watch(
-  () => route.query,
-  (query) => {
-    draftSearch.value = appliedSearch.value
-    const normalizedSearch = appliedSearch.value || undefined
-    const normalizedSort = sort.value === 'Oldest' ? undefined : sort.value
-    if (query.sort !== normalizedSort || query.search !== normalizedSearch) {
-      void router.replace({
-        query: { ...query, search: normalizedSearch, sort: normalizedSort },
-      })
-    }
-  },
-  { immediate: true },
-)
 
 async function changeSort(value: string) {
   await router.push({
@@ -54,7 +41,7 @@ async function submitSearch() {
   })
 }
 
-const bills = computed(() =>
+const matchingBills = computed(() =>
   totals.bills
     .filter((bill) => bill.name.toLowerCase().includes(appliedSearch.value.toLowerCase()))
     .sort((a, b) => {
@@ -74,6 +61,48 @@ const bills = computed(() =>
       }
     }),
 )
+const pageSize = 10
+const pageCount = computed(() => Math.max(1, Math.ceil(matchingBills.value.length / pageSize)))
+const page = computed(() => {
+  const value = route.query.page
+  const requested = typeof value === 'string' && /^[1-9]\d*$/.test(value) ? Number(value) : 1
+  return Math.min(requested, pageCount.value)
+})
+const bills = computed(() =>
+  matchingBills.value.slice((page.value - 1) * pageSize, page.value * pageSize),
+)
+watch(
+  () => route.query,
+  (query) => {
+    draftSearch.value = appliedSearch.value
+    const normalizedSearch = appliedSearch.value || undefined
+    const normalizedSort = sort.value === 'Oldest' ? undefined : sort.value
+    const normalizedPage = page.value === 1 ? undefined : String(page.value)
+    if (
+      query.sort !== normalizedSort ||
+      query.search !== normalizedSearch ||
+      query.page !== normalizedPage
+    ) {
+      void router.replace({
+        query: { ...query, search: normalizedSearch, sort: normalizedSort, page: normalizedPage },
+      })
+    }
+  },
+  { immediate: true },
+)
+
+const heading = useTemplateRef<HTMLHeadingElement>('heading')
+async function changePage(nextPage: number) {
+  if (nextPage === page.value) return
+  const failure = await router.push({
+    query: { ...route.query, page: nextPage === 1 ? undefined : String(nextPage) },
+  })
+  if (failure) return
+  await nextTick()
+  heading.value?.focus({ preventScroll: true })
+  heading.value?.scrollIntoView?.({ block: 'start' })
+}
+
 const summaries = [
   { label: 'Paid Bills', count: totals.paidCount, amount: totals.paid },
   { label: 'Total Upcoming', count: totals.upcomingCount, amount: totals.upcoming },
@@ -97,7 +126,13 @@ function ordinal(day: number) {
     tabindex="-1"
     class="mx-auto flex w-full max-w-[1520px] min-w-0 flex-col gap-8 px-4 pt-6 pb-[calc(84px+env(safe-area-inset-bottom))] md:px-10 md:pt-8 md:pb-[calc(109px+env(safe-area-inset-bottom))] xl:pb-8"
   >
-    <h1 class="flex h-14 items-center text-preset-1">Recurring Bills</h1>
+    <h1
+      ref="heading"
+      tabindex="-1"
+      class="flex h-14 scroll-mt-6 items-center text-preset-1 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green md:scroll-mt-8"
+    >
+      Recurring Bills
+    </h1>
     <div class="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,337fr)_minmax(0,699fr)] xl:items-start">
       <div class="grid min-w-0 gap-3 md:grid-cols-2 md:gap-6 xl:grid-cols-1">
         <section
@@ -230,6 +265,12 @@ function ordinal(day: number) {
           </tbody>
         </table>
         <p v-else class="py-8 text-center text-gray-500">No bills found</p>
+        <BasePagination
+          label="Bill pages"
+          :page="page"
+          :page-count="pageCount"
+          @change="changePage"
+        />
       </section>
     </div>
   </main>

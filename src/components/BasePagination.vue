@@ -4,7 +4,11 @@ import BaseButton from '@/components/BaseButton.vue'
 import IconCaretLeft from '@/components/icons/IconCaretLeft.vue'
 import IconCaretRight from '@/components/icons/IconCaretRight.vue'
 
-const { page, pageCount } = defineProps<{ page: number; pageCount: number }>()
+const { page, pageCount, label } = defineProps<{
+  page: number
+  pageCount: number
+  label: string
+}>()
 const emit = defineEmits<{ change: [page: number] }>()
 const pages = computed(() =>
   Array.from({ length: pageCount }, (_, index) => {
@@ -23,7 +27,7 @@ const pages = computed(() =>
 <template>
   <nav
     v-if="pageCount > 1"
-    aria-label="Transaction pages"
+    :aria-label="label"
     class="mt-6 flex items-center justify-between gap-2"
   >
     <BaseButton
