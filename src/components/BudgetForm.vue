@@ -43,8 +43,7 @@ function submit(event: Event) {
     // near the safe-integer boundary even when multiplying back appears to round-trip.
     BigInt(formatCurrency(amount).replace(/\D/g, '')) !== cents
   ) {
-    amountError.value =
-      'Enter a positive USD amount with at most two decimal places, safely representable in cents.'
+    amountError.value = 'Enter an amount above $0 with up to 2 decimal places.'
   }
   if (amountError.value || categoryError.value || themeError.value) {
     const form = event.currentTarget as HTMLFormElement

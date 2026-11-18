@@ -97,7 +97,9 @@ describe('Budgets', () => {
     expect(dialog.get('input').element.value).toBe(amount)
     expect(dialog.get('input').attributes('aria-invalid')).toBe('true')
     const errorId = dialog.get('input').attributes('aria-describedby')
-    expect(dialog.get(`[id="${errorId}"]`).text()).toContain('positive USD amount')
+    expect(dialog.get(`[id="${errorId}"]`).text()).toBe(
+      'Enter an amount above $0 with up to 2 decimal places.',
+    )
     expect(screen.findAll('article')).toHaveLength(4)
     await dialog.get('input').setValue('0.29')
     await dialog.get('form').trigger('submit')

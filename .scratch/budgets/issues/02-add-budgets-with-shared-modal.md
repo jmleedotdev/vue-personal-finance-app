@@ -29,3 +29,7 @@
 ## Scope boundary
 
 Do not expose inactive edit/delete actions. The modal shell is reusable, but pot dialogs and persistence remain out of scope.
+
+## Comments
+
+- Follow-up: shorten the Maximum Spend error to “Enter an amount above $0 with up to 2 decimal places.” Validation rules remain unchanged.

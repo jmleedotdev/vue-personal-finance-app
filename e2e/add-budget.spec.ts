@@ -78,7 +78,9 @@ test('Add validates, synchronizes navigation, resets on real reload and keeps fo
   await dialog.getByRole('button', { name: 'Add Budget', exact: true }).click()
   await expect(amount).toHaveAttribute('aria-invalid', 'true')
   await expect(amount).toBeFocused()
-  await expect(amount).toHaveAccessibleDescription(/positive USD amount/)
+  await expect(amount).toHaveAccessibleDescription(
+    'Enter an amount above $0 with up to 2 decimal places.',
+  )
   await amount.fill('123.45')
   await dialog.getByRole('button', { name: 'Add Budget', exact: true }).click()
   await expect(dialog).toHaveCount(0)
