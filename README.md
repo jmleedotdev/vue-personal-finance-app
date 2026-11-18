@@ -44,18 +44,24 @@ Hook setup requires an existing Git checkout, the supported Node.js version, and
 
 Setup writes only local `core.hooksPath=.githooks`. It refuses a conflicting hooks-path configuration at any scope or custom files in the default hooks directory; it does not overwrite them. To keep your existing hook manager, integrate `pnpm check` into its pre-commit hook and propagate its exit status. Alternatively, explicitly relocate existing hooks or remove the conflicting configuration at its reported scope before retrying setup. Git hooks are local and bypassable (for example, `git commit --no-verify`), not a substitute for future server-side enforcement. Run setup again for each fresh checkout.
 
-Browser-dependent layout checks are explicitly invoked and Chromium-only. Run the production-preview check before release or handoff; it is **not** part of `pnpm check` or the commit hook:
+Browser-dependent layout checks are explicitly invoked and Chromium-only. Use the build-first `pnpm test:browser` command for browser validation, including focused runs, so the production preview serves the source being validated. It is **not** part of `pnpm check` or the commit hook:
 
 ```sh
 # One-time browser setup (requires a download); on Linux use --with-deps if needed
 pnpm exec playwright install chromium
 # Non-interactive: build, start a fresh production preview, run headless Chromium, exit
 pnpm test:browser
-# Optional development-server browser checks
+# Focused file: rebuild first, then run only this browser suite
+pnpm test:browser e2e/budgets.spec.ts
+# Focused test: Playwright arguments are forwarded after the build
+pnpm test:browser e2e/budgets.spec.ts -g 'zero-budget'
+# Optional development-server exploration (not production-build validation)
 pnpm test:e2e
 ```
 
-`pnpm test:browser` uses Playwright's CI configuration and a line reporter (no interactive report server). Port 4173 must be free. Browser setup may need network access; subsequent runs use the installed browser.
+`pnpm test:browser` uses Playwright's CI configuration and a line reporter (no interactive report server). Each invocation type-checks and rebuilds before starting a fresh production preview; a failed build prevents the browser run. Port 4173 must be free. Browser setup may need network access; subsequent runs use the installed browser.
+
+Direct `CI=1 playwright test` invocations start the preview against whatever is already in `dist`; Playwright does not rebuild it. Use `pnpm test:browser` instead of manually chaining build and browser commands. `pnpm test:e2e` remains available for development-server exploration.
 
 Playwright checks reference, intermediate, and narrow widths for responsive navigation, summary arrangement, overflow, keyboard interaction, and bottom-navigation clearance. Vitest tests rendered content and accessible behavior, not CSS class strings.
 
