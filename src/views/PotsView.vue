@@ -6,11 +6,30 @@ import PotCard from '@/components/PotCard.vue'
 import BaseModal from '@/components/BaseModal.vue'
 import PotForm from '@/components/PotForm.vue'
 import PotTransferForm from '@/components/PotTransferForm.vue'
+import { formatCurrency } from '@/utils/currency'
 import { usePotsStore, type PotInput, type PotTransferOperation } from '@/stores/pots'
 
 const store = usePotsStore()
 const { pots, themeOptions, canAddPot } = storeToRefs(store)
 const adding = ref(false)
+const addButton = useTemplateRef('addButton')
+const deletingId = ref<string | null>(null)
+const deletingPot = computed(() => pots.value.find((pot) => pot.id === deletingId.value))
+const deletionError = ref('')
+function openDelete(id: string) {
+  deletionError.value = ''
+  deletingId.value = id
+}
+function deletePot() {
+  if (!deletingId.value) return
+  if (store.deletePot(deletingId.value)) deletingId.value = null
+  else
+    deletionError.value =
+      'This deletion would exceed the supported safe monetary values. Your pot and Current Balance have not changed.'
+}
+function deletionReturnFocus() {
+  return canAddPot.value ? (addButton.value?.$el as HTMLButtonElement) : heading.value
+}
 const transferOperation = ref<PotTransferOperation>('add')
 const transferPotId = ref<string | null>(null)
 function openTransfer(id: string, operation: PotTransferOperation) {
@@ -41,21 +60,49 @@ function addPot(input: PotInput) {
   >
     <header class="flex min-h-14 items-center justify-between gap-4">
       <h1 ref="heading" tabindex="-1" class="text-preset-1">Pots</h1>
-      <BaseButton aria-label="Add New Pot" :disabled="!canAddPot" @click="adding = true"
+      <BaseButton
+        ref="addButton"
+        aria-label="Add New Pot"
+        :disabled="!canAddPot"
+        @click="adding = true"
         >+ Add New Pot</BaseButton
       >
     </header>
-    <div class="grid min-w-0 gap-6 xl:grid-cols-2">
+    <section
+      v-if="!pots.length"
+      aria-labelledby="empty-pots-heading"
+      class="rounded-xl bg-white px-5 py-6 md:p-8"
+    >
+      <h2 id="empty-pots-heading" class="text-preset-2">No pots yet</h2>
+      <p class="mt-4 text-gray-500">
+        Create a pot with Add New Pot to start saving toward your next goal.
+      </p>
+    </section>
+    <div v-else class="grid min-w-0 gap-6 xl:grid-cols-2">
       <PotCard
         v-for="pot in pots"
         :key="pot.id"
         :pot="pot"
         :can-add-money="store.currentBalance > 0"
         @edit="editingId = $event"
+        @delete="openDelete"
         @add-money="openTransfer($event, 'add')"
         @withdraw="openTransfer($event, 'withdraw')"
       />
     </div>
+    <BaseModal
+      v-if="deletingPot"
+      :heading="`Delete ‘${deletingPot.name}’?`"
+      :description="`Are you sure you want to delete this pot? This action cannot be reversed. ${formatCurrency(deletingPot.total)} will be returned to your Current Balance.`"
+      :return-focus="deletionReturnFocus"
+      @close="deletingId = null"
+    >
+      <p v-if="deletionError" role="alert" class="text-red">{{ deletionError }}</p>
+      <BaseButton variant="destroy" @click="deletePot">Yes, Confirm Deletion</BaseButton>
+      <BaseButton variant="tertiary" class="min-h-8" @click="deletingId = null"
+        >No, Go Back</BaseButton
+      >
+    </BaseModal>
     <BaseModal
       v-if="transferPot"
       :heading="`${transferOperation === 'add' ? 'Add to' : 'Withdraw from'} ‘${transferPot.name}’`"

@@ -31,11 +31,11 @@ const { pots, totalSaved } = storeToRefs(usePotsStore())
           <p class="text-preset-1">{{ formatCurrency(totalSaved, 0) }}</p>
         </div>
       </div>
-      <div class="min-w-0 md:flex-1">
+      <div v-if="pots.length" class="min-w-0 md:flex-1">
         <div
           role="region"
           aria-label="Savings pots"
-          aria-describedby="pots-scroll-help"
+          :aria-describedby="pots.length > 4 ? 'pots-scroll-help' : undefined"
           tabindex="0"
           class="h-[102px] overflow-y-auto rounded-xs focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-green"
         >
@@ -51,7 +51,7 @@ const { pots, totalSaved } = storeToRefs(usePotsStore())
             </li>
           </ul>
         </div>
-        <p id="pots-scroll-help" class="sr-only">
+        <p v-if="pots.length > 4" id="pots-scroll-help" class="sr-only">
           Use arrow keys when focused, swipe, or scroll to reach all pots.
         </p>
       </div>

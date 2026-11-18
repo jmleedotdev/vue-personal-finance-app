@@ -7,6 +7,10 @@ import { budgetThemes } from '@/utils/budgetThemes'
 export type PotTransferOperation = 'add' | 'withdraw'
 export type PotInput = { name: string; target: number; theme: string }
 
+function isNonNegativeUsdAmount(amount: number) {
+  return amount === 0 || parsePositiveUsd(String(amount)) === amount
+}
+
 export const usePotsStore = defineStore('pots', () => {
   const pots = ref(demo.pots.map((pot) => ({ ...pot })))
   // Bundled Current Balance already excludes the savings held in pots.
@@ -47,6 +51,27 @@ export const usePotsStore = defineStore('pots', () => {
     Object.assign(pot, { name: input.name.trim(), target: input.target, theme: input.theme })
     return true
   }
+  function deletePot(id: string) {
+    const index = pots.value.findIndex((pot) => pot.id === id)
+    const pot = pots.value[index]
+    if (!pot) return false
+    const balanceCents = Math.round(currentBalance.value * 100)
+    const savedCents = Math.round(pot.total * 100)
+    const returnedCents = balanceCents + savedCents
+    const balance = returnedCents / 100
+    if (
+      !isNonNegativeUsdAmount(currentBalance.value) ||
+      !isNonNegativeUsdAmount(pot.total) ||
+      !Number.isSafeInteger(returnedCents) ||
+      Math.round(balance * 100) !== returnedCents ||
+      !isNonNegativeUsdAmount(balance)
+    )
+      return false
+    // Validate before changing either side; a removed identity cannot return money twice.
+    currentBalance.value = balance
+    pots.value.splice(index, 1)
+    return true
+  }
   // Preview and confirmation share validation, but confirmation always reads live state.
   function previewTransfer(id: string, input: string, operation: PotTransferOperation) {
     const pot = pots.value.find((pot) => pot.id === id)
@@ -77,8 +102,8 @@ export const usePotsStore = defineStore('pots', () => {
       // Safe integer cents can still lose a cent when converted to decimal dollars.
       Math.round(total * 100) !== totalCents ||
       Math.round(balance * 100) !== remainingCents ||
-      (total !== 0 && parsePositiveUsd(String(total)) !== total) ||
-      (balance !== 0 && parsePositiveUsd(String(balance)) !== balance)
+      !isNonNegativeUsdAmount(total) ||
+      !isNonNegativeUsdAmount(balance)
     )
       return { error: 'This transfer would exceed the supported safe monetary values.' }
     return { error: '', total, balance }
@@ -94,6 +119,7 @@ export const usePotsStore = defineStore('pots', () => {
   }
   return {
     pots,
+    deletePot,
     previewTransfer,
     transferMoney,
     currentBalance,

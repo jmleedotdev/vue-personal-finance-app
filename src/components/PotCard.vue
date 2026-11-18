@@ -6,15 +6,23 @@ import type { Pot } from '@/stores/pots'
 import { formatCurrency } from '@/utils/currency'
 
 const { pot } = defineProps<{ pot: Pot; canAddMoney: boolean }>()
-const emit = defineEmits<{ edit: [id: string]; addMoney: [id: string]; withdraw: [id: string] }>()
+const emit = defineEmits<{
+  edit: [id: string]
+  delete: [id: string]
+  addMoney: [id: string]
+  withdraw: [id: string]
+}>()
 const menuOpen = ref(false)
 const menuRoot = useTemplateRef('menuRoot')
 const trigger = useTemplateRef('trigger')
 const editAction = useTemplateRef('editAction')
-async function openMenu() {
+const deleteAction = useTemplateRef('deleteAction')
+async function openMenu(focusLast = false) {
   menuOpen.value = true
   await nextTick()
-  editAction.value?.focus()
+  const action = focusLast ? deleteAction.value : editAction.value
+  action?.focus()
+  menuRoot.value?.querySelector('[role="menu"]')?.scrollIntoView?.({ block: 'nearest' })
 }
 function closeMenu(restoreFocus = false) {
   menuOpen.value = false
@@ -27,7 +35,14 @@ function onMenuKeydown(event: KeyboardEvent) {
     closeMenu(true)
   } else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
     event.preventDefault()
-    void openMenu()
+    if (!menuOpen.value) {
+      void openMenu(event.key === 'ArrowUp' || event.key === 'End')
+    } else {
+      const focusLast =
+        event.key === 'End' || (event.key !== 'Home' && document.activeElement === editAction.value)
+      const action = focusLast ? deleteAction.value : editAction.value
+      action?.focus()
+    }
   } else if (event.key === 'Tab') closeMenu()
 }
 function onOutsidePointer(event: PointerEvent) {
@@ -37,10 +52,11 @@ function onFocusout(event: FocusEvent) {
   if (!(event.relatedTarget instanceof Node && menuRoot.value?.contains(event.relatedTarget)))
     closeMenu()
 }
-async function requestEdit() {
+async function requestAction(action: 'edit' | 'delete') {
   closeMenu(true)
   await nextTick()
-  emit('edit', pot.id)
+  if (action === 'edit') emit('edit', pot.id)
+  else emit('delete', pot.id)
 }
 onMounted(() => document.addEventListener('pointerdown', onOutsidePointer))
 onUnmounted(() => document.removeEventListener('pointerdown', onOutsidePointer))
@@ -78,16 +94,25 @@ const percentageText = computed(() => `${Number(percentage.value.toFixed(2))}%`)
           :id="`${pot.id}-menu`"
           role="menu"
           :aria-labelledby="`${pot.id}-menu-trigger`"
-          class="absolute top-full right-0 z-10 mt-2 flex w-max flex-col rounded-lg bg-white px-5 py-1 shadow-[0_4px_24px_0] shadow-gray-900/25"
+          class="absolute top-full right-0 z-10 mt-2 flex w-max flex-col divide-y divide-gray-100 rounded-lg bg-white px-5 py-1 shadow-[0_4px_24px_0] shadow-gray-900/25"
         >
           <button
             ref="editAction"
             type="button"
             role="menuitem"
             class="rounded-sm py-3 text-left text-preset-4 hover:text-gray-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
-            @click="requestEdit"
+            @click="requestAction('edit')"
           >
             Edit Pot
+          </button>
+          <button
+            ref="deleteAction"
+            type="button"
+            role="menuitem"
+            class="rounded-sm py-3 text-left text-preset-4 text-red hover:text-red-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900"
+            @click="requestAction('delete')"
+          >
+            Delete Pot
           </button>
         </div>
       </div>
