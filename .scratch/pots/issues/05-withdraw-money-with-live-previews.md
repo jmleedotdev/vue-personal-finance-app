@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 — Add Money with live previews.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Enable Withdraw for funded pots and disable it at zero savings, without explanatory text or disabled-reason descriptions.
 - [x] Reuse the transfer-dialog foundation from Add Money, keeping operation-specific limits, labels, and preview semantics clear.
@@ -34,3 +34,11 @@ Implementation validation:
 - Full production-built Chromium suite passed all 160 tests.
 - Standards review: no documented violations; optional suggestions to rename funding-specific dialog state and share test setup. Renamed state to transferPotId/transferPot; kept the small isolated test setup local to avoid unrelated test-harness refactoring.
 - Spec review found a lossy dollars-conversion edge at very large safe-integer cent balances. Added a failing rendered-app regression, then rejected results unless both dollar amounts round-trip to the exact computed cents. Regression and focused Add/Withdraw tests pass. Both independent final delta reviews approved with no remaining issues. Final `pnpm check` passed (217 app tests, 8 hook tests, type-check, lint, build), and the full build-first Chromium suite passed again (160 tests).
+
+
+### Status reconciliation
+
+- Changed the stale readiness status to `resolved`: implementation, checked acceptance criteria, and the existing independent review and visual-validation records confirm this slice is complete.
+- Fresh full-project validation: `pnpm check` passes (233 app tests, 8 hook integration tests, lint, type-checking, and production build); `pnpm test:browser` passes all 168 production-built Chromium checks, including the completed Pots journeys and cross-feature regressions. One pre-existing `playwright/no-conditional-in-test` warning remains in `e2e/delete-budget.spec.ts`; there are no lint errors.
+- `resolved` records completion, distinct from the five readiness/triage labels. Any earlier comment retaining a readiness label solely because the triage vocabulary lacks a completion label is superseded by this reconciliation.
+- This reconciliation uses implementation inspection, existing review/visual-validation evidence, and fresh automated checks; it does not claim a new private-reference visual review.

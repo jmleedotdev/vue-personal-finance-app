@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 — Create savings pots.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Provide an accessible per-pot management menu and working Edit Pot action for the intended pot. Do not expose an enabled deletion action until deletion is implemented.
 - [x] Reuse the metadata form established for creation, prefilled with saved name, target, and theme.
@@ -30,3 +30,11 @@ Validation: `pnpm check` passed (lint, type-check, full fast suite, production b
 Visual inspection compared production menu/Edit captures against cached native menu/Edit references and responsive foundations. The Edit panel follows the 560px desktop reference, shared typography/spacing, fields, swatches and Save action. Intentional differences: no deletion item yet; demo data/current pot colors retained; keyboard focus outlines visible. Checked desktop/tablet/mobile and narrow/short layouts (1440×900, 768×700, 375×600, 320×360, 900×320), scrollable selector, and reachable Save action. Captures remain in ignored `test-results/`; private references remain ignored. Chromium only; no cross-browser claim.
 
 Independent review against starting HEAD `c56d895`: Spec — no issues found. Standards — two hard consistency findings fixed (shared BaseButton trigger and theme-backed shadow color), then independently confirmed with no new hard issues. One nonblocking duplication judgment remains: Pot/Budget menu dismissal/focus lifecycles are similar; shared-menu extraction is deferred to avoid broadening this slice. Final source passed `pnpm check` (205 app tests and 8 script/hook tests) and the full build-first `pnpm test:browser` suite (148 Chromium checks). Review follow-up covered the final control/style delta; this completion note adds no application changes.
+
+
+### Status reconciliation
+
+- Changed the stale readiness status to `resolved`: implementation, checked acceptance criteria, and the existing independent review and visual-validation records confirm this slice is complete.
+- Fresh full-project validation: `pnpm check` passes (233 app tests, 8 hook integration tests, lint, type-checking, and production build); `pnpm test:browser` passes all 168 production-built Chromium checks, including the completed Pots journeys and cross-feature regressions. One pre-existing `playwright/no-conditional-in-test` warning remains in `e2e/delete-budget.spec.ts`; there are no lint errors.
+- `resolved` records completion, distinct from the five readiness/triage labels. Any earlier comment retaining a readiness label solely because the triage vocabulary lacks a completion label is superseded by this reconciliation.
+- This reconciliation uses implementation inspection, existing review/visual-validation evidence, and fresh automated checks; it does not claim a new private-reference visual review.

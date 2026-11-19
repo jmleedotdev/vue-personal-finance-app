@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 — Edit pot goals from management menus.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Add Delete Pot to the existing management menu with accessible destructive treatment, opening confirmation for the intended pot after closing the menu.
 - [x] Name the pot and explicitly state the saved amount that will return to Current Balance, including zero for an empty pot.
@@ -34,3 +34,11 @@ Implementation validation:
 - Independent Standards and Spec reviews completed. Spec found no issues. Standards raised two non-blocking notes: the explicitly owner-approved store seam (retained) and duplicated monetary validation (consolidated into a shared local predicate). After that refactor, type-check, 28 focused financial tests, and 20 build-first deletion/Add Money/Withdraw Chromium checks passed. No private links, keys, or screenshots are included in tracked changes.
 - Final delta reviews found no remaining Standards or Spec issues; both verdicts were OK. `pnpm check` passed again after the predicate extraction (233 app tests, 8 hook tests, lint/type-check/build).
 - Implementation and validation are complete; the triage vocabulary has no completed-state label, so the readiness label is retained.
+
+
+### Status reconciliation
+
+- Changed the stale readiness status to `resolved`: implementation, checked acceptance criteria, and the existing independent review and visual-validation records confirm this slice is complete.
+- Fresh full-project validation: `pnpm check` passes (233 app tests, 8 hook integration tests, lint, type-checking, and production build); `pnpm test:browser` passes all 168 production-built Chromium checks, including the completed Pots journeys and cross-feature regressions. One pre-existing `playwright/no-conditional-in-test` warning remains in `e2e/delete-budget.spec.ts`; there are no lint errors.
+- `resolved` records completion, distinct from the five readiness/triage labels. Any earlier comment retaining a readiness label solely because the triage vocabulary lacks a completion label is superseded by this reconciliation.
+- This reconciliation uses implementation inspection, existing review/visual-validation evidence, and fresh automated checks; it does not claim a new private-reference visual review.

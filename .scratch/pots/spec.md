@@ -1,6 +1,6 @@
 # Pots Page and Pot Management
 
-Status: ready-for-agent
+Status: resolved
 
 ## Problem Statement
 
@@ -209,3 +209,10 @@ Treat savings targets as goals rather than caps. Deleting a funded pot returns i
 ## Comments
 
 Published after the owner confirmed the product summary and rendered-app/production-browser testing approach. Ready for implementation; no implementation work was performed as part of spec publication.
+
+### Status reconciliation
+
+- All six implementation issues are resolved with checked acceptance criteria and recorded implementation, independent review, and visual validation. The completed feature includes both entry points, shared session-only pot and Current Balance ownership, creation/editing, live Add Money/Withdraw previews and confirmed cent-safe transfers, funded deletion, palette/name recovery, empty-state recreation, and immediate Overview synchronization. Reload restores bundled demo finances; internal transfers leave Income, Expenses, and transaction history unchanged.
+- Fresh full-project validation: `pnpm check` passes (233 app tests, 8 hook integration tests, lint, type-checking, and production build). `pnpm test:browser` passes all 168 production-built Chromium checks, including financial journeys, native modal/menu focus, responsive and short-viewport fit, reload reset, and cross-feature regressions. One pre-existing `playwright/no-conditional-in-test` warning remains in `e2e/delete-budget.spec.ts`; there are no lint errors.
+- Changed the stale parent-spec status to `resolved`. The publication-time statements above describe the original specification step, not the current implementation status. The owner-approved supplemental public-store tests for unsafe/atomic financial cases are documented in issue 06.
+- This reconciliation uses implementation inspection, completed issue records, existing review/visual-validation evidence, and fresh automated checks; it does not claim a new private-reference visual review.

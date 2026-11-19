@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Browse Pots and connect Overview.
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Enable each pot's Add Money action when Current Balance is positive. At zero balance disable it without explanatory text or disabled-reason descriptions.
 - [x] Open a labeled dialog for the selected pot with a blank amount and saved-state preview. Reuse shared modal/controls and establish a narrow transfer-dialog foundation suitable for Withdraw.
@@ -33,3 +33,11 @@ Implementation validation:
 - Initial browser runs exposed an overly exact floating-point percentage assertion and legacy tests expecting Add Money disabled; updated those expectations. A timed-out legacy run left its preview process listening, which was stopped before the clean successful build-first run. No browser checks remain blocked.
 - Full final regression validation after review fixes: `pnpm check` passed again (211 app tests, 8 hook tests, lint/type-check/build); `pnpm test:browser` passed all 154 production Chromium checks. Review follow-up also checked already-over-target additions and capped geometry at all five transfer viewports.
 - Independent Standards and Spec reviews completed. Initial notes about positional test controls and missing already-over-target transfer coverage were addressed; both reviewers rechecked the test-only delta and reported no remaining findings. Implementation and validation are complete; the triage vocabulary has no completed-state label, so the readiness label is retained.
+
+
+### Status reconciliation
+
+- Changed the stale readiness status to `resolved`: implementation, checked acceptance criteria, and the existing independent review and visual-validation records confirm this slice is complete.
+- Fresh full-project validation: `pnpm check` passes (233 app tests, 8 hook integration tests, lint, type-checking, and production build); `pnpm test:browser` passes all 168 production-built Chromium checks, including the completed Pots journeys and cross-feature regressions. One pre-existing `playwright/no-conditional-in-test` warning remains in `e2e/delete-budget.spec.ts`; there are no lint errors.
+- `resolved` records completion, distinct from the five readiness/triage labels. Any earlier comment retaining a readiness label solely because the triage vocabulary lacks a completion label is superseded by this reconciliation.
+- This reconciliation uses implementation inspection, existing review/visual-validation evidence, and fresh automated checks; it does not claim a new private-reference visual review.
